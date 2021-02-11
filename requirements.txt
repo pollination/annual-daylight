@@ -2,5 +2,5 @@
 # 0.9.0 has a bug. Remove this when updating pollination-honeybee-radiance to higher than
 # 0.4.6 and ensure pllination-dsl is set to 0.9.3 or higher.
 pollination-dsl==0.9.6
-pollination-honeybee-radiance==0.4.6
+pollination-honeybee-radiance==0.4.7
 pollination-alias==0.1.0
