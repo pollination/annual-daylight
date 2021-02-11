@@ -8,7 +8,8 @@ from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_input
-
+from pollination.alias.inputs.wea import wea_input
+from pollination.alias.inputs.north import north_input
 
 from ._raytracing import AnnualDaylightRayTracing
 
@@ -21,7 +22,8 @@ class AnnualDaylightEntryPoint(DAG):
     north = Inputs.float(
         default=0,
         description='A number for rotation from north.',
-        spec={'type': 'number', 'minimum': 0, 'maximum': 360}
+        spec={'type': 'number', 'minimum': 0, 'maximum': 360},
+        alias=north_input
     )
 
     sensor_count = Inputs.int(
@@ -43,7 +45,8 @@ class AnnualDaylightEntryPoint(DAG):
 
     wea = Inputs.file(
         description='Wea file.',
-        extensions=['wea']
+        extensions=['wea'],
+        alias=wea_input
     )
 
     @task(template=CreateSunMatrix)
