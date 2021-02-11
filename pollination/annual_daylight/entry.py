@@ -63,6 +63,10 @@ class AnnualDaylightEntryPoint(DAG):
         return [
             {'from': CreateRadianceFolder()._outputs.model_folder, 'to': 'model'},
             {
+                'from': CreateRadianceFolder()._outputs.sensor_grids_file,
+                'to': 'results/grids_info.json'
+            },
+            {
                 'from': CreateRadianceFolder()._outputs.sensor_grids,
                 'description': 'Sensor grids information.'
             }
