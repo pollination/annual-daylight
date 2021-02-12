@@ -10,6 +10,7 @@ from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
 from pollination.alias.inputs.model import hbjson_model_input
 from pollination.alias.inputs.wea import wea_input
 from pollination.alias.inputs.north import north_input
+from pollination.alias.outputs.daylight import sort_annual_daylight_results
 
 from ._raytracing import AnnualDaylightRayTracing
 
@@ -157,4 +158,7 @@ class AnnualDaylightEntryPoint(DAG):
     ):
         pass
 
-    results = Outputs.folder(source='results')
+    results = Outputs.folder(
+        source='results',
+        alias=sort_annual_daylight_results
+    )
