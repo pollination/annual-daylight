@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pollination.honeybee_radiance.grid import SplitGrid, MergeFiles
 from pollination.honeybee_radiance.contrib import DaylightContribution
 from pollination.honeybee_radiance.coefficient import DaylightCoefficient
-from pollination.honeybee_radiance.sky import AddRemoveSkyMatrixWithConversion
+from pollination.honeybee_radiance.sky import AddRemoveSkyMatrix
 
 
 @dataclass
@@ -21,7 +21,7 @@ class AnnualDaylightRayTracing(DAG):
 
     radiance_parameters = Inputs.str(
         description='The radiance parameters for ray tracing',
-        default='-ab 2'
+        default='-ab 2 -ad 5000 -lw 2e-05'
     )
 
     octree_file_with_suns = Inputs.file(
@@ -75,7 +75,7 @@ class AnnualDaylightRayTracing(DAG):
     def direct_sunlight(
         self,
         radiance_parameters=radiance_parameters,
-        fixed_radiance_parameters='-aa 0.0 -I -fad -ab 0 -dc 1.0 -dt 0.0 -dj 0.0 -dr 0',
+        fixed_radiance_parameters='-aa 0.0 -I -faf -ab 0 -dc 1.0 -dt 0.0 -dj 0.0 -dr 0',
         sensor_count='{{item.count}}', modifiers=sun_modifiers,
         sensor_grid=split_grid._outputs.output_folder,
         scene_file=octree_file_with_suns
@@ -95,7 +95,7 @@ class AnnualDaylightRayTracing(DAG):
     def direct_sky(
         self,
         radiance_parameters=radiance_parameters,
-        fixed_radiance_parameters='-aa 0.0 -I -ab 1 -c 1 -fad',
+        fixed_radiance_parameters='-aa 0.0 -I -ab 1 -c 1 -faf',
         sensor_count='{{item.count}}',
         sky_matrix=sky_matrix_direct, sky_dome=sky_dome,
         sensor_grid=split_grid._outputs.output_folder,
@@ -116,7 +116,7 @@ class AnnualDaylightRayTracing(DAG):
     def total_sky(
         self,
         radiance_parameters=radiance_parameters,
-        fixed_radiance_parameters='-aa 0.0 -I -c 1 -fad',
+        fixed_radiance_parameters='-aa 0.0 -I -c 1 -faf',
         sensor_count='{{item.count}}',
         sky_matrix=sky_matrix, sky_dome=sky_dome,
         sensor_grid=split_grid._outputs.output_folder,
@@ -130,7 +130,7 @@ class AnnualDaylightRayTracing(DAG):
         ]
 
     @task(
-        template=AddRemoveSkyMatrixWithConversion,
+        template=AddRemoveSkyMatrix,
         needs=[split_grid, direct_sunlight, total_sky, direct_sky],
         loop=split_grid._outputs.grids_list, sub_folder='final'
     )
@@ -139,11 +139,11 @@ class AnnualDaylightRayTracing(DAG):
         direct_sky_matrix='direct_sky/{{item.name}}.ill',
         total_sky_matrix='total_sky/{{item.name}}.ill',
         sunlight_matrix='direct_sunlight/{{item.name}}.ill',
-
+        conversion='47.4 119.9 11.6'
             ):
         return [
             {
-                'from': AddRemoveSkyMatrixWithConversion()._outputs.results_file,
+                'from': AddRemoveSkyMatrix()._outputs.results_file,
                 'to': '{{item.name}}.ill'
             }
         ]

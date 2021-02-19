@@ -38,6 +38,11 @@ class AnnualDaylightEntryPoint(DAG):
         default='-ab 2 -ad 5000 -lw 2e-05'
     )
 
+    sensor_grid = Inputs.str(
+        description='A grid name or a pattern to filter the sensor grids. By default '
+        'all the grids in HBJSON model will be exported.', default='*'
+    )
+
     model = Inputs.file(
         description='A Honeybee model in HBJSON file format.',
         extensions=['json', 'hbjson'],
@@ -62,7 +67,7 @@ class AnnualDaylightEntryPoint(DAG):
         ]
 
     @task(template=CreateRadianceFolder)
-    def create_rad_folder(self, input_model=model):
+    def create_rad_folder(self, input_model=model, sensor_grid=sensor_grid):
         """Translate the input model to a radiance folder."""
         return [
             {'from': CreateRadianceFolder()._outputs.model_folder, 'to': 'model'},
@@ -109,13 +114,15 @@ class AnnualDaylightEntryPoint(DAG):
         ]
 
     @task(template=CreateSkyMatrix)
-    def create_total_sky(self, north=north, wea=wea):
+    def create_total_sky(self, north=north, wea=wea, sun_up_hours='sun-up-hours'):
         return [
             {'from': CreateSkyMatrix()._outputs.sky_matrix, 'to': 'resources/sky.mtx'}
         ]
 
     @task(template=CreateSkyMatrix)
-    def create_direct_sky(self, north=north, wea=wea, sky_component='-d'):
+    def create_direct_sky(
+        self, north=north, wea=wea, sky_type='sun-only', sun_up_hours='sun-up-hours'
+            ):
         return [
             {
                 'from': CreateSkyMatrix()._outputs.sky_matrix,
@@ -140,7 +147,7 @@ class AnnualDaylightEntryPoint(DAG):
         ],
         loop=create_rad_folder._outputs.sensor_grids,
         sub_folder='initial_results/{{item.name}}',  # create a subfolder for each grid
-        sub_paths={'sensor_grid': 'grid/{{item.name}}.pts'}  # sub_path for sensor_grid arg
+        sub_paths={'sensor_grid': 'grid/{{item.full_id}}.pts'}  # sub_path for sensor_grid arg
     )
     def annual_daylight_raytracing(
         self,
@@ -148,7 +155,7 @@ class AnnualDaylightEntryPoint(DAG):
         radiance_parameters=radiance_parameters,
         octree_file_with_suns=create_octree_with_suns._outputs.scene_file,
         octree_file=create_octree._outputs.scene_file,
-        grid_name='{{item.name}}',
+        grid_name='{{item.full_id}}',
         sensor_grid=create_rad_folder._outputs.model_folder,
         sky_matrix=create_total_sky._outputs.sky_matrix,
         sky_dome=create_sky_dome._outputs.sky_dome,
