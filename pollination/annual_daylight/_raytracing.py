@@ -151,7 +151,7 @@ class AnnualDaylightRayTracing(DAG):
     @task(
         template=MergeFiles, needs=[output_matrix_math]
     )
-    def merge_results(self, name=grid_name, extension='.ill', folder='final'):
+    def merge_raw_results(self, name=grid_name, extension='.ill', folder='final'):
         return [
             {
                 'from': MergeFiles()._outputs.result_file,

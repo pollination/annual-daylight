@@ -4,6 +4,7 @@ from pollination.honeybee_radiance.sun import CreateSunMatrix, ParseSunUpHours
 from pollination.honeybee_radiance.translate import CreateRadianceFolder
 from pollination.honeybee_radiance.octree import CreateOctree, CreateOctreeWithSky
 from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
+from pollination.honeybee_radiance.post_process import AnnualDaylightMetrics
 
 
 # input/output alias
@@ -53,6 +54,22 @@ class AnnualDaylightEntryPoint(DAG):
         description='Wea file.',
         extensions=['wea'],
         alias=wea_input
+    )
+
+    schedule = Inputs.file(
+        description='Path to an annual schedule file. Values should be 0-1 separated '
+        'by new line. If not provided an 8-5 annual schedule will be created.',
+        extensions=['txt', 'csv'], optional=True
+    )
+
+    thresholds = Inputs.str(
+        description='A string to change the threshold for daylight autonomy and useful '
+        'daylight illuminance. Valid keys are -t for daylight autonomy threshold, -lt '
+        'for the lower threshold for useful daylight illuminance and -ut for the upper '
+        'threshold. The defult is -t 300 -lt 100 -ut 3000. The order of the keys is not '
+        'important and you can include one or all of them. For instance if you only '
+        'want to change the upper threshold to 2000 lux you should use -ut 2000 as '
+        'the input.', default='-t 300 -lt 100 -ut 3000'
     )
 
     @task(template=CreateSunMatrix)
@@ -165,7 +182,26 @@ class AnnualDaylightEntryPoint(DAG):
     ):
         pass
 
+    @task(
+        template=AnnualDaylightMetrics,
+        needs=[parse_sun_up_hours, annual_daylight_raytracing]
+    )
+    def calculate_annual_metrics(
+        self, folder='results', schedule=schedule, thresholds=thresholds
+    ):
+        return [
+            {
+                'from': AnnualDaylightMetrics()._outputs.annual_metrics,
+                'to': 'metrics'
+            }
+        ]
+
     results = Outputs.folder(
         source='results',
+        alias=sort_annual_daylight_results
+    )
+
+    metrics = Outputs.folder(
+        source='metrics',
         alias=sort_annual_daylight_results
     )
