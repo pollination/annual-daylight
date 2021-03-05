@@ -11,7 +11,11 @@ from pollination.honeybee_radiance.post_process import AnnualDaylightMetrics
 from pollination.alias.inputs.model import hbjson_model_input
 from pollination.alias.inputs.wea import wea_input
 from pollination.alias.inputs.north import north_input
-from pollination.alias.outputs.daylight import sort_annual_daylight_results
+from pollination.alias.inputs.schedule import schedule_csv_input
+from pollination.alias.outputs.daylight import sort_annual_daylight_results, \
+    daylight_autonomy_results, continuous_daylight_autonomy_results, \
+    useful_daylight_illuminance_results
+
 
 from ._raytracing import AnnualDaylightRayTracing
 
@@ -59,14 +63,14 @@ class AnnualDaylightEntryPoint(DAG):
     schedule = Inputs.file(
         description='Path to an annual schedule file. Values should be 0-1 separated '
         'by new line. If not provided an 8-5 annual schedule will be created.',
-        extensions=['txt', 'csv'], optional=True
+        extensions=['txt', 'csv'], optional=True, alias=schedule_csv_input
     )
 
     thresholds = Inputs.str(
         description='A string to change the threshold for daylight autonomy and useful '
         'daylight illuminance. Valid keys are -t for daylight autonomy threshold, -lt '
         'for the lower threshold for useful daylight illuminance and -ut for the upper '
-        'threshold. The defult is -t 300 -lt 100 -ut 3000. The order of the keys is not '
+        'threshold. The default is -t 300 -lt 100 -ut 3000. The order of the keys is not '
         'important and you can include one or all of them. For instance if you only '
         'want to change the upper threshold to 2000 lux you should use -ut 2000 as '
         'the input.', default='-t 300 -lt 100 -ut 3000'
@@ -197,11 +201,37 @@ class AnnualDaylightEntryPoint(DAG):
         ]
 
     results = Outputs.folder(
-        source='results',
-        alias=sort_annual_daylight_results
+        source='results', description='Folder with raw result files (.ill) that '
+        'contain illuminance matrices.', alias=sort_annual_daylight_results
     )
 
     metrics = Outputs.folder(
-        source='metrics',
-        alias=sort_annual_daylight_results
+        source='metrics', description='Annual metrics folder.'
+    )
+
+    da = Outputs.folder(
+        source='metrics/da', description='Daylight autonomy results.',
+        alias=daylight_autonomy_results
+    )
+
+    cda = Outputs.folder(
+        source='metrics/cda', description='Continuous daylight autonomy results.',
+        alias=continuous_daylight_autonomy_results
+    )
+
+    udi = Outputs.folder(
+        source='metrics/udi', description='Useful daylight illuminance results.',
+        alias=useful_daylight_illuminance_results
+    )
+
+    udi_lower = Outputs.folder(
+        source='metrics/udi_lower', description='Results for the percent of time that '
+        'is below the lower threshold of useful daylight illuminance.',
+        alias=useful_daylight_illuminance_results
+    )
+
+    udi_upper = Outputs.folder(
+        source='metrics/udi_upper', description='Results for the percent of time that '
+        'is above the upper threshold of useful daylight illuminance.',
+        alias=useful_daylight_illuminance_results
     )
