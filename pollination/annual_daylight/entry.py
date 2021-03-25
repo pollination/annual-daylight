@@ -1,7 +1,7 @@
 from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
 from pollination.honeybee_radiance.sun import CreateSunMatrix, ParseSunUpHours
-from pollination.honeybee_radiance.translate import CreateRadianceFolder
+from pollination.honeybee_radiance.translate import CreateRadianceFolderGrid
 from pollination.honeybee_radiance.octree import CreateOctree, CreateOctreeWithSky
 from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
 from pollination.honeybee_radiance.post_process import AnnualDaylightMetrics
@@ -97,17 +97,17 @@ class AnnualDaylightEntryPoint(DAG):
             }
         ]
 
-    @task(template=CreateRadianceFolder)
-    def create_rad_folder(self, input_model=model, sensor_grid=grid_filter):
+    @task(template=CreateRadianceFolderGrid)
+    def create_rad_folder(self, input_model=model, grid_filter=grid_filter):
         """Translate the input model to a radiance folder."""
         return [
-            {'from': CreateRadianceFolder()._outputs.model_folder, 'to': 'model'},
+            {'from': CreateRadianceFolderGrid()._outputs.model_folder, 'to': 'model'},
             {
-                'from': CreateRadianceFolder()._outputs.sensor_grids_file,
+                'from': CreateRadianceFolderGrid()._outputs.sensor_grids_file,
                 'to': 'results/grids_info.json'
             },
             {
-                'from': CreateRadianceFolder()._outputs.sensor_grids,
+                'from': CreateRadianceFolderGrid()._outputs.sensor_grids,
                 'description': 'Sensor grids information.'
             }
         ]
