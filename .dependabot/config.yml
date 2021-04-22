@@ -3,10 +3,15 @@ update_configs:
   - package_manager: "python"
     directory: "/"
     update_schedule: "live"
-    # automerged_updates:
-    #   - match:
-    #       dependency_type: "all"
-    #       update_type: "all"
+    ignored_updates:
+      - match:
+          dependency_name: "pytest"
+      - match:
+          dependency_name: "twine"
+      - match:
+          dependency_name: "wheel"
+      - match:
+          dependency_name: "setuptools"
     commit_message:
       prefix: "fix"
       prefix_development: "chore"
