@@ -9,7 +9,7 @@ from pollination.honeybee_radiance.post_process import AnnualDaylightMetrics
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_input
-from pollination.alias.inputs.wea import wea_input
+from pollination.alias.inputs.wea import wea_input_timestep_check
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input, \
     daylight_thresholds_input
@@ -66,7 +66,7 @@ class AnnualDaylightEntryPoint(DAG):
     wea = Inputs.file(
         description='Wea file.',
         extensions=['wea'],
-        alias=wea_input
+        alias=wea_input_timestep_check
     )
 
     schedule = Inputs.file(
