@@ -79,8 +79,8 @@ class AnnualDaylightEntryPoint(DAG):
         description='A string to change the threshold for daylight autonomy and useful '
         'daylight illuminance. Valid keys are -t for daylight autonomy threshold, -lt '
         'for the lower threshold for useful daylight illuminance and -ut for the upper '
-        'threshold. The default is -t 300 -lt 100 -ut 3000. The order of the keys is not '
-        'important and you can include one or all of them. For instance if you only '
+        'threshold. The default is -t 300 -lt 100 -ut 3000. The order of the keys is '
+        'not important and you can include one or all of them. For instance if you only '
         'want to change the upper threshold to 2000 lux you should use -ut 2000 as '
         'the input.', default='-t 300 -lt 100 -ut 3000',
         alias=daylight_thresholds_input
@@ -101,7 +101,14 @@ class AnnualDaylightEntryPoint(DAG):
     def create_rad_folder(self, input_model=model, grid_filter=grid_filter):
         """Translate the input model to a radiance folder."""
         return [
-            {'from': CreateRadianceFolderGrid()._outputs.model_folder, 'to': 'model'},
+            {
+                'from': CreateRadianceFolderGrid()._outputs.model_folder,
+                'to': 'model'
+            },
+            {
+                'from': CreateRadianceFolderGrid()._outputs.bsdf_folder,
+                'to': 'model/bsdf'
+            },
             {
                 'from': CreateRadianceFolderGrid()._outputs.sensor_grids_file,
                 'to': 'results/grids_info.json'
@@ -178,7 +185,7 @@ class AnnualDaylightEntryPoint(DAG):
         ],
         loop=create_rad_folder._outputs.sensor_grids,
         sub_folder='initial_results/{{item.name}}',  # create a subfolder for each grid
-        sub_paths={'sensor_grid': 'grid/{{item.full_id}}.pts'}  # sub_path for sensor_grid arg
+        sub_paths={'sensor_grid': 'grid/{{item.full_id}}.pts'}  # sensor_grid sub_path
     )
     def annual_daylight_raytracing(
         self,
@@ -192,7 +199,8 @@ class AnnualDaylightEntryPoint(DAG):
         sky_dome=create_sky_dome._outputs.sky_dome,
         sky_matrix_direct=create_direct_sky._outputs.sky_matrix,
         sunpath=generate_sunpath._outputs.sunpath,
-        sun_modifiers=generate_sunpath._outputs.sun_modifiers
+        sun_modifiers=generate_sunpath._outputs.sun_modifiers,
+        bsdfs=create_rad_folder._outputs.bsdf_folder
     ):
         pass
 
