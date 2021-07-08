@@ -110,7 +110,7 @@ class AnnualDaylightRayTracing(DAG):
     ):
         return [
             {
-                'from': DaylightContribution()._outputs.result_file,
+                'from': DaylightCoefficient()._outputs.result_file,
                 'to': '{{item.name}}.ill'
             }
         ]
@@ -132,7 +132,7 @@ class AnnualDaylightRayTracing(DAG):
     ):
         return [
             {
-                'from': DaylightContribution()._outputs.result_file,
+                'from': DaylightCoefficient()._outputs.result_file,
                 'to': '{{item.name}}.ill'
             }
         ]
@@ -148,7 +148,7 @@ class AnnualDaylightRayTracing(DAG):
         total_sky_matrix='total_sky/{{item.name}}.ill',
         sunlight_matrix='direct_sunlight/{{item.name}}.ill',
         conversion='47.4 119.9 11.6'
-            ):
+    ):
         return [
             {
                 'from': AddRemoveSkyMatrix()._outputs.results_file,
