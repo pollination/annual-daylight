@@ -46,7 +46,7 @@ class AnnualDaylightEntryPoint(DAG):
         description='Minimum number of sensors in each sensor grid after redistributing '
         'the sensors based on cpu_count. Use this value to ensure the parallelization '
         'does not result in generating very small sensor grids. The default value is '
-        'set to 1.', defult=1, spec={'type': 'integer', 'minimum': 1}
+        'set to 1.', default=1, spec={'type': 'integer', 'minimum': 1}
     )
 
     radiance_parameters = Inputs.str(
