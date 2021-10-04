@@ -152,7 +152,7 @@ class AnnualDaylightEntryPoint(DAG):
             },
             {
                 'from': SplitGridFolder()._outputs.dist_info,
-                'to': 'initial_results/final/_dist_info.json'
+                'to': 'initial_results/final/_redist_info.json'
             },
             {
                 'from': SplitGridFolder()._outputs.sensor_grids,
