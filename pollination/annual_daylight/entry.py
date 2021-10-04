@@ -42,6 +42,13 @@ class AnnualDaylightEntryPoint(DAG):
         spec={'type': 'integer', 'minimum': 1}
     )
 
+    sensor_count = Inputs.int(
+        description='Minimum number of sensors in each sensor grid after redistributing '
+        'the sensors based on cpu_count. Use this value to ensure the parallelization '
+        'does not result in generating very small sensor grids. The default value is '
+        'set to 1.', defult=1, spec={'type': 'integer', 'minimum': 1}
+    )
+
     radiance_parameters = Inputs.str(
         description='The radiance parameters for ray tracing.',
         default='-ab 2 -ad 5000 -lw 2e-05',
@@ -135,7 +142,7 @@ class AnnualDaylightEntryPoint(DAG):
     )
     def split_grid_folder(
         self, input_folder=create_rad_folder._outputs.model_folder,
-        grid_count=cpu_count, sensor_count=1000
+        grid_count=cpu_count, sensor_count=sensor_count
         ):
         """Split sensor grid folder based on the number of CPUs."""
         return [
