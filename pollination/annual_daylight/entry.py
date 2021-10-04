@@ -4,6 +4,7 @@ from pollination.honeybee_radiance.sun import CreateSunMatrix, ParseSunUpHours
 from pollination.honeybee_radiance.translate import CreateRadianceFolderGrid
 from pollination.honeybee_radiance.octree import CreateOctree, CreateOctreeWithSky
 from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
+from pollination.honeybee_radiance.grid import SplitGridFolder, MergeFolderData
 from pollination.honeybee_radiance.post_process import AnnualDaylightMetrics
 
 
@@ -13,7 +14,7 @@ from pollination.alias.inputs.wea import wea_input_timestep_check
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input, \
     daylight_thresholds_input
-from pollination.alias.inputs.grid import sensor_count_input, grid_filter_input
+from pollination.alias.inputs.grid import grid_filter_input
 from pollination.alias.inputs.schedule import schedule_csv_input
 from pollination.alias.outputs.daylight import annual_daylight_results, \
     daylight_autonomy_results, continuous_daylight_autonomy_results, \
@@ -35,11 +36,10 @@ class AnnualDaylightEntryPoint(DAG):
         alias=north_input
     )
 
-    sensor_count = Inputs.int(
-        default=200,
-        description='The maximum number of grid points per parallel execution.',
-        spec={'type': 'integer', 'minimum': 1},
-        alias=sensor_count_input
+    cpu_count = Inputs.int(
+        default=50,
+        description='The maximum number of CPUs for parallel execution.',
+        spec={'type': 'integer', 'minimum': 1}
     )
 
     radiance_parameters = Inputs.str(
@@ -49,7 +49,7 @@ class AnnualDaylightEntryPoint(DAG):
     )
 
     grid_filter = Inputs.str(
-        description='Text for a grid identifer or a pattern to filter the sensor grids '
+        description='Text for a grid identifier or a pattern to filter the sensor grids '
         'of the model that are simulated. For instance, first_floor_* will simulate '
         'only the sensor grids that have an identifier that starts with '
         'first_floor_. By default, all grids in the model will be simulated.',
@@ -130,6 +130,30 @@ class AnnualDaylightEntryPoint(DAG):
         ]
 
     @task(
+        template=SplitGridFolder, needs=[create_rad_folder], 
+        sub_paths={'input_folder': 'grid'}
+    )
+    def split_grid_folder(
+        self, input_folder=create_rad_folder._outputs.model_folder,
+        grid_count=cpu_count, sensor_count=1000
+        ):
+        """Split sensor grid folder based on the number of CPUs."""
+        return [
+            {
+                'from': SplitGridFolder()._outputs.output_folder,
+                'to': 'resources/grid'
+            },
+            {
+                'from': SplitGridFolder()._outputs.dist_info,
+                'to': 'initial_results/final/_dist_info.json'
+            },
+            {
+                'from': SplitGridFolder()._outputs.sensor_grids,
+                'description': 'Sensor grids information.'
+            }
+        ]
+
+    @task(
         template=CreateOctreeWithSky, needs=[generate_sunpath, create_rad_folder]
     )
     def create_octree_with_suns(
@@ -181,20 +205,20 @@ class AnnualDaylightEntryPoint(DAG):
         template=AnnualDaylightRayTracing,
         needs=[
             create_sky_dome, create_octree_with_suns, create_octree, generate_sunpath,
-            create_total_sky, create_direct_sky, create_rad_folder
+            create_total_sky, create_direct_sky, create_rad_folder, split_grid_folder
         ],
-        loop=create_rad_folder._outputs.sensor_grids,
-        sub_folder='initial_results/{{item.name}}',  # create a subfolder for each grid
-        sub_paths={'sensor_grid': 'grid/{{item.full_id}}.pts'}  # sensor_grid sub_path
+        loop=split_grid_folder._outputs.sensor_grids,
+        sub_folder='initial_results/{{item.full_id}}',  # create a subfolder for each grid
+        sub_paths={'sensor_grid': '{{item.full_id}}.pts'}  # sensor_grid sub_path
     )
     def annual_daylight_raytracing(
         self,
-        sensor_count=sensor_count,
         radiance_parameters=radiance_parameters,
         octree_file_with_suns=create_octree_with_suns._outputs.scene_file,
         octree_file=create_octree._outputs.scene_file,
         grid_name='{{item.full_id}}',
-        sensor_grid=create_rad_folder._outputs.model_folder,
+        sensor_grid=split_grid_folder._outputs.output_folder,
+        sensor_count='{{item.count}}',
         sky_matrix=create_total_sky._outputs.sky_matrix,
         sky_dome=create_sky_dome._outputs.sky_dome,
         sky_matrix_direct=create_direct_sky._outputs.sky_matrix,
@@ -205,8 +229,20 @@ class AnnualDaylightEntryPoint(DAG):
         pass
 
     @task(
+        template=MergeFolderData,
+        needs=[annual_daylight_raytracing]
+    )
+    def restructure_results(self, input_folder='initial_results/final', extension='ill'):
+        return [
+            {
+                'from': MergeFolderData()._outputs.output_folder,
+                'to': 'results'
+            }
+        ]
+
+    @task(
         template=AnnualDaylightMetrics,
-        needs=[parse_sun_up_hours, annual_daylight_raytracing]
+        needs=[parse_sun_up_hours, annual_daylight_raytracing, restructure_results]
     )
     def calculate_annual_metrics(
         self, folder='results', schedule=schedule, thresholds=thresholds
