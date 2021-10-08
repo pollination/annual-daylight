@@ -287,7 +287,6 @@ class AnnualDaylightEntryPoint(DAG):
     @task(template=TranslateVTKJS, needs=[convert_metrics_info])
     def create_vtkjs(
             self, hbjson_file=model, file_type='vtkjs', grid_options='points',
-            config_path=convert_metrics_info._outputs.config,
             data='metrics'
         ):
         return [
