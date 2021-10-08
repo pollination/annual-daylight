@@ -14,7 +14,8 @@ from pollination.alias.inputs.wea import wea_input_timestep_check
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input, \
     daylight_thresholds_input
-from pollination.alias.inputs.grid import grid_filter_input
+from pollination.alias.inputs.grid import grid_filter_input, \
+    min_sensor_count_input, cpu_count
 from pollination.alias.inputs.schedule import schedule_csv_input
 from pollination.alias.outputs.daylight import annual_daylight_results, \
     daylight_autonomy_results, continuous_daylight_autonomy_results, \
@@ -38,15 +39,21 @@ class AnnualDaylightEntryPoint(DAG):
 
     cpu_count = Inputs.int(
         default=50,
-        description='The maximum number of CPUs for parallel execution.',
-        spec={'type': 'integer', 'minimum': 1}
+        description='The maximum number of CPUs for parallel execution. This will be '
+        'used to determine the number of sensors run by each worker.',
+        spec={'type': 'integer', 'minimum': 1},
+        alias=cpu_count
     )
 
-    sensor_count = Inputs.int(
-        description='Minimum number of sensors in each sensor grid after redistributing '
-        'the sensors based on cpu_count. Use this value to ensure the parallelization '
-        'does not result in generating very small sensor grids. The default value is '
-        'set to 1.', default=1, spec={'type': 'integer', 'minimum': 1}
+    min_sensor_count = Inputs.int(
+        description='The minimum number of sensors in each sensor grid after '
+        'redistributing the sensors based on cpu_count. This value takes '
+        'precedence over the cpu_count and can be used to ensure that '
+        'the parallelization does not result in generating unnecessarily small '
+        'sensor grids. The default value is set to 1, which means that the '
+        'cpu_count is always respected.', default=1,
+        spec={'type': 'integer', 'minimum': 1},
+        alias=min_sensor_count_input
     )
 
     radiance_parameters = Inputs.str(
@@ -142,8 +149,8 @@ class AnnualDaylightEntryPoint(DAG):
     )
     def split_grid_folder(
         self, input_folder=create_rad_folder._outputs.model_folder,
-        grid_count=cpu_count, sensor_count=sensor_count
-        ):
+        cpu_count=cpu_count, cpus_per_grid=3, min_sensor_count=min_sensor_count
+    ):
         """Split sensor grid folder based on the number of CPUs."""
         return [
             {
@@ -191,7 +198,7 @@ class AnnualDaylightEntryPoint(DAG):
     @task(template=CreateSkyMatrix)
     def create_direct_sky(
         self, north=north, wea=wea, sky_type='sun-only', sun_up_hours='sun-up-hours'
-            ):
+    ):
         return [
             {
                 'from': CreateSkyMatrix()._outputs.sky_matrix,
