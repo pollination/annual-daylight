@@ -7,6 +7,9 @@ from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
 from pollination.honeybee_radiance.grid import SplitGridFolder, MergeFolderData
 from pollination.honeybee_radiance.post_process import AnnualDaylightMetrics
 
+from pollination.honeybee_vtk.config import Config as VTKConfig
+from pollination.honeybee_vtk.translate import Translate as TranslateVTKJS
+
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
 from pollination.alias.inputs.wea import wea_input_timestep_check
@@ -266,6 +269,37 @@ class AnnualDaylightEntryPoint(DAG):
                 'to': 'metrics'
             }
         ]
+
+    @task(
+        template=VTKConfig, needs=[calculate_annual_metrics],
+        sub_paths={'input_file': 'metrics_info.json'}
+    )
+    def convert_metrics_info(
+            self, input_file=calculate_annual_metrics._outputs.annual_metrics
+    ):
+        return [
+            {
+                'from': VTKConfig()._outputs.config,
+                'to': 'metrics/config.json'
+            }
+        ]
+
+    @task(template=TranslateVTKJS, needs=[convert_metrics_info])
+    def create_vtkjs(
+            self, hbjson_file=model, file_type='vtkjs', grid_options='points',
+            data='metrics'
+        ):
+        return [
+            {
+                'from': TranslateVTKJS()._outputs.output_file,
+                'to': 'visualization/annual_daylight.vtkjs'
+            }
+        ]
+
+    visualization = Outputs.file(
+        source='visualization/annual_daylight.vtkjs',
+        description='Results visualization in 3D in vtkjs format.'
+    )
 
     results = Outputs.folder(
         source='results', description='Folder with raw result files (.ill) that '
