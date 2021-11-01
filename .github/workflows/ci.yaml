@@ -61,6 +61,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: visualization
+          fetch-depth: 0
       - name: rebase visualization branch
         run: |
           git rebase master
@@ -102,6 +103,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: visualization
+          fetch-depth: 0
       - name: rebase visualization branch
         run: |
           git rebase production
