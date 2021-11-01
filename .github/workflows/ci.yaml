@@ -81,10 +81,6 @@ jobs:
     if: github.ref == 'refs/heads/production' && github.repository_owner == 'pollination'
     steps:
       - uses: actions/checkout@v2
-      - name: Get Job Context
-        id: get-context
-        run: |
-          echo "::set-output name=tag::$(git describe --tags | sed 's/v//')"
       - name: set up Python
         uses: actions/setup-python@v2
         with:
