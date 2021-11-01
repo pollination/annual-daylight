@@ -14,8 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: git remote -v
-      - run: git fetch origin/visualization
-      - run: git rebase origin visualization
+      - run: git fetch origin visualization
+      - run: git rebase origin/visualization
       - name: set up Python
         uses: actions/setup-python@v2
         with:
