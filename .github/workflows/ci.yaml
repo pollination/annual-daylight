@@ -64,6 +64,8 @@ jobs:
           fetch-depth: 0
       - name: rebase visualization branch
         run: |
+          git config --global user.email "ci@pollination.cloud"
+          git config --global user.name "GitHub Actions"
           git rebase origin/master
       - name: bash
         run: git log --pretty=oneline
@@ -108,6 +110,8 @@ jobs:
   #         fetch-depth: 0
   #     - name: rebase visualization branch
   #       run: |
+            # git config --global user.email "ci@pollination.cloud"
+            # git config --global user.name "GitHub Actions"
   #         git rebase origin/production
   #     - name: install python viz dependencies
   #       run: pip install .
