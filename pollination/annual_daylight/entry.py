@@ -103,7 +103,8 @@ class AnnualDaylightEntryPoint(DAG):
     def generate_sunpath(self, north=north, wea=wea):
         """Create sunpath for sun-up-hours."""
         return [
-            {'from': CreateSunMatrix()._outputs.sunpath, 'to': 'resources/sunpath.mtx'},
+            {'from': CreateSunMatrix()._outputs.sunpath,
+             'to': 'resources/sunpath.mtx'},
             {
                 'from': CreateSunMatrix()._outputs.sun_modifiers,
                 'to': 'resources/suns.mod'
@@ -143,14 +144,14 @@ class AnnualDaylightEntryPoint(DAG):
         ]
 
     @task(
-        template=SplitGridFolder, needs=[create_rad_folder], 
+        template=SplitGridFolder, needs=[create_rad_folder],
         sub_paths={'input_folder': 'grid'}
     )
     def split_grid_folder(
         self, input_folder=create_rad_folder._outputs.model_folder,
         cpu_count=cpu_count, cpus_per_grid=3, min_sensor_count=min_sensor_count
     ):
-        """Split sensor grid folder based on the number of CPUs."""
+        """Split sensor grid folder based on the number of CPUs"""
         return [
             {
                 'from': SplitGridFolder()._outputs.output_folder,
@@ -167,7 +168,8 @@ class AnnualDaylightEntryPoint(DAG):
         ]
 
     @task(
-        template=CreateOctreeWithSky, needs=[generate_sunpath, create_rad_folder]
+        template=CreateOctreeWithSky, needs=[
+            generate_sunpath, create_rad_folder]
     )
     def create_octree_with_suns(
         self, model=create_rad_folder._outputs.model_folder,
@@ -191,7 +193,8 @@ class AnnualDaylightEntryPoint(DAG):
     @task(template=CreateSkyMatrix)
     def create_total_sky(self, north=north, wea=wea, sun_up_hours='sun-up-hours'):
         return [
-            {'from': CreateSkyMatrix()._outputs.sky_matrix, 'to': 'resources/sky.mtx'}
+            {'from': CreateSkyMatrix()._outputs.sky_matrix,
+             'to': 'resources/sky.mtx'}
         ]
 
     @task(template=CreateSkyMatrix)
@@ -221,8 +224,10 @@ class AnnualDaylightEntryPoint(DAG):
             create_total_sky, create_direct_sky, create_rad_folder, split_grid_folder
         ],
         loop=split_grid_folder._outputs.sensor_grids,
-        sub_folder='initial_results/{{item.full_id}}',  # create a subfolder for each grid
-        sub_paths={'sensor_grid': '{{item.full_id}}.pts'}  # sensor_grid sub_path
+        # create a subfolder for each grid
+        sub_folder='initial_results/{{item.full_id}}',
+        # sensor_grid sub_path
+        sub_paths={'sensor_grid': '{{item.full_id}}.pts'}
     )
     def annual_daylight_raytracing(
         self,
