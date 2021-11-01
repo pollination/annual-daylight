@@ -16,7 +16,7 @@ jobs:
       - run: git remote -v
       - run: git fetch origin visualization
       - run: git branch
-      - run: git merge origin/visualization
+      - run: git rebase origin/visualization
       - name: set up Python
         uses: actions/setup-python@v2
         with:
