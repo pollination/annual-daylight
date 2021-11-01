@@ -102,6 +102,9 @@ jobs:
         with:
           ref: visualization
           fetch-depth: 0
+      - name: bash
+        run: |
+          git branch -a
       - name: rebase visualization branch
         run: |
           git rebase production
