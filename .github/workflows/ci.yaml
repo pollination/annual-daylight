@@ -107,7 +107,7 @@ jobs:
           git branch -a
       - name: rebase visualization branch
         run: |
-          git rebase production
+          git rebase origin/production
       - name: install python viz dependencies
         run: pip install .
       - name: run tests
