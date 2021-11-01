@@ -69,6 +69,8 @@ jobs:
         run: git log --pretty=oneline
       - name: install python viz dependencies
         run: pip install .
+      - name: install dev deps
+        run: pip install -r dev-requirements.txt
       - name: run tests
         run: python -m pytest tests/
       # - name: deploy viz to staging
