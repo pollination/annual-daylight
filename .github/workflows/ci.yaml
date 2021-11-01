@@ -59,7 +59,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
       - name: rebase visualization branch
-        run: git rebase visualization
+        run: |
+          git fetch origin visualization
+          git rebase origin/visualization
       - name: install python viz dependencies
         run: pip install .
       - name: deploy viz to staging
@@ -96,7 +98,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_LADYBUGBOT_TOKEN }}
       - name: rebase visualization branch
-        run: git rebase visualization
+        run: |
+          git fetch origin visualization
+          git rebase origin/visualization
       - name: install python viz dependencies
         run: pip install .
       - name: deploy viz to production
