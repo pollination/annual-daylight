@@ -4,7 +4,6 @@ name: CI
 on: [pull_request]
 
 jobs:
-
   test:
     name: Unit tests
     strategy:
@@ -14,6 +13,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+      - run: git remote -v
+      - run: git rebase origin/visualization
       - name: set up Python
         uses: actions/setup-python@v2
         with:
