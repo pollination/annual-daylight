@@ -69,7 +69,7 @@ jobs:
           git rebase origin/master
       - name: deploy viz to staging
         env:
-          TAG: ${{needs.deploy.outputs.tag}}
+          TAG: ${{ needs.deploy.outputs.tag }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
         run: |
@@ -116,10 +116,11 @@ jobs:
         run: pip install .
       - name: deploy viz to production
         env:
+          TAG: ${{ steps.get-context.outputs.tag }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_LADYBUGBOT_TOKEN }}
-          TAG: ${{needs.deploy.outputs.tag}}
         run: |
           TAG="${TAG:?}-viz"
+
           queenbee
           pollination dsl push pollination-annual-daylight --tag $TAG -e https://api.pollination.cloud -src https://api.pollination.cloud/registries --push-dependencies
