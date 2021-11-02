@@ -73,7 +73,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
         run: |
-          TAG="${TAG:?}-viz"
+          TAG=$(echo "${TAG:?}-viz" | sed 's/[[:space:]]//g')
+
+          echo $TAG
 
           queenbee
           pollination dsl push pollination-annual-daylight --tag $TAG -e https://api.staging.pollination.cloud -src https://api.staging.pollination.cloud/registries --push-dependencies
@@ -120,7 +122,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_LADYBUGBOT_TOKEN }}
         run: |
-          TAG="${TAG:?}-viz"
+          TAG=$(echo "${TAG:?}-viz" | sed 's/[[:space:]]//g')
+
+          echo $TAG
 
           queenbee
           pollination dsl push pollination-annual-daylight --tag $TAG -e https://api.pollination.cloud -src https://api.pollination.cloud/registries --push-dependencies
