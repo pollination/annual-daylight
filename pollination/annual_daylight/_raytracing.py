@@ -65,18 +65,20 @@ class AnnualDaylightRayTracing(DAG):
     @task(template=DaylightContribution)
     def direct_sunlight(
         self,
+        name=grid_name,
         radiance_parameters=radiance_parameters,
-        fixed_radiance_parameters='-aa 0.0 -I -faf -ab 0 -dc 1.0 -dt 0.0 -dj 0.0 -dr 0',
+        fixed_radiance_parameters='-aa 0.0 -I -ab 0 -dc 1.0 -dt 0.0 -dj 0.0 -dr 0',
         sensor_count=sensor_count,
         modifiers=sun_modifiers,
         sensor_grid=sensor_grid,
+        output_format='a',  # make it ascii so we expose the file as a separate output
         scene_file=octree_file_with_suns,
         bsdf_folder=bsdfs
     ):
         return [
             {
                 'from': DaylightContribution()._outputs.result_file,
-                'to': 'direct_sunlight.ill'
+                'to': '../final/direct/{{self.name}}.ill'
             }
         ]
 
@@ -131,6 +133,6 @@ class AnnualDaylightRayTracing(DAG):
         return [
             {
                 'from': AddRemoveSkyMatrix()._outputs.results_file,
-                'to': '../final/{{self.name}}.ill'
+                'to': '../final/total/{{self.name}}.ill'
             }
         ]
