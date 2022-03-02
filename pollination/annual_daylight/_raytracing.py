@@ -71,6 +71,7 @@ class AnnualDaylightRayTracing(DAG):
         sensor_count=sensor_count,
         modifiers=sun_modifiers,
         sensor_grid=sensor_grid,
+        conversion='47.4 119.9 11.6',
         output_format='a',  # make it ascii so we expose the file as a separate output
         scene_file=octree_file_with_suns,
         bsdf_folder=bsdfs
@@ -90,6 +91,7 @@ class AnnualDaylightRayTracing(DAG):
         sensor_count=sensor_count,
         sky_matrix=sky_matrix_direct, sky_dome=sky_dome,
         sensor_grid=sensor_grid,
+        conversion='47.4 119.9 11.6',
         scene_file=octree_file,
         bsdf_folder=bsdfs
     ):
@@ -108,6 +110,7 @@ class AnnualDaylightRayTracing(DAG):
         sensor_count=sensor_count,
         sky_matrix=sky_matrix, sky_dome=sky_dome,
         sensor_grid=sensor_grid,
+        conversion='47.4 119.9 11.6',
         scene_file=octree_file,
         bsdf_folder=bsdfs
     ):
@@ -127,8 +130,7 @@ class AnnualDaylightRayTracing(DAG):
         name=grid_name,
         direct_sky_matrix=direct_sky._outputs.result_file,
         total_sky_matrix=total_sky._outputs.result_file,
-        sunlight_matrix=direct_sunlight._outputs.result_file,
-        conversion='47.4 119.9 11.6'
+        sunlight_matrix=direct_sunlight._outputs.result_file
     ):
         return [
             {
