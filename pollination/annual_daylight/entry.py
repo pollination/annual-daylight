@@ -6,7 +6,6 @@ from pollination.honeybee_radiance.octree import CreateOctree, CreateOctreeWithS
 from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
 from pollination.honeybee_radiance.grid import SplitGridFolder, MergeFolderData
 from pollination.honeybee_radiance.post_process import AnnualDaylightMetrics
-from pollination.path.copy import Copy
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
@@ -18,8 +17,7 @@ from pollination.alias.inputs.grid import grid_filter_input, \
     min_sensor_count_input, cpu_count
 from pollination.alias.inputs.schedule import schedule_csv_input
 from pollination.alias.outputs.daylight import annual_daylight_results, \
-    annual_daylight_direct_results, daylight_autonomy_results, \
-    continuous_daylight_autonomy_results, \
+    daylight_autonomy_results, continuous_daylight_autonomy_results, \
     udi_results, udi_lower_results, udi_upper_results
 
 
@@ -73,8 +71,10 @@ class AnnualDaylightEntryPoint(DAG):
     )
 
     model = Inputs.file(
-        description='A Honeybee model in HBJSON file format.',
-        extensions=['json', 'hbjson'],
+        description='A Honeybee Model JSON file (HBJSON) or a Model pkl (HBpkl) file. '
+        'This can also be a zipped version of a Radiance folder, in which case this '
+        'recipe will simply unzip the file and simulate it as-is.',
+        extensions=['json', 'hbjson', 'pkl', 'hbpkl', 'zip'],
         alias=hbjson_model_grid_input
     )
 
@@ -127,20 +127,11 @@ class AnnualDaylightEntryPoint(DAG):
             },
             {
                 'from': CreateRadianceFolderGrid()._outputs.sensor_grids_file,
-                'to': 'results/total/grids_info.json'
+                'to': 'results/grids_info.json'
             },
             {
                 'from': CreateRadianceFolderGrid()._outputs.sensor_grids,
                 'description': 'Sensor grids information.'
-            }
-        ]
-
-    @task(template=Copy, needs=[create_rad_folder])
-    def copy_grid_info(self, src=create_rad_folder._outputs.sensor_grids_file):
-        return [
-            {
-                'from': Copy()._outputs.dst,
-                'to': 'results/direct/grids_info.json'
             }
         ]
 
@@ -170,20 +161,11 @@ class AnnualDaylightEntryPoint(DAG):
             },
             {
                 'from': SplitGridFolder()._outputs.dist_info,
-                'to': 'initial_results/final/total/_redist_info.json'
+                'to': 'initial_results/final/_redist_info.json'
             },
             {
                 'from': SplitGridFolder()._outputs.sensor_grids,
                 'description': 'Sensor grids information.'
-            }
-        ]
-
-    @task(template=Copy, needs=[split_grid_folder])
-    def copy_redist_info(self, src=split_grid_folder._outputs.dist_info):
-        return [
-            {
-                'from': Copy()._outputs.dst,
-                'to': 'initial_results/final/direct/_redist_info.json'
             }
         ]
 
@@ -233,16 +215,7 @@ class AnnualDaylightEntryPoint(DAG):
         return [
             {
                 'from': ParseSunUpHours()._outputs.sun_up_hours,
-                'to': 'results/total/sun-up-hours.txt'
-            }
-        ]
-
-    @task(template=Copy, needs=[parse_sun_up_hours])
-    def copy_sun_up_hours(self, src=parse_sun_up_hours._outputs.sun_up_hours):
-        return [
-            {
-                'from': Copy()._outputs.dst,
-                'to': 'results/direct/sun-up-hours.txt'
+                'to': 'results/sun-up-hours.txt'
             }
         ]
 
@@ -280,27 +253,12 @@ class AnnualDaylightEntryPoint(DAG):
         needs=[annual_daylight_raytracing]
     )
     def restructure_results(
-        self, input_folder='initial_results/final/total', extension='ill'
+        self, input_folder='initial_results/final', extension='ill'
     ):
         return [
             {
                 'from': MergeFolderData()._outputs.output_folder,
-                'to': 'results/total'
-            }
-        ]
-
-    @task(
-        template=MergeFolderData,
-        needs=[annual_daylight_raytracing]
-    )
-    def restructure_direct_results(
-        self, input_folder='initial_results/final/direct',
-        extension='ill'
-    ):
-        return [
-            {
-                'from': MergeFolderData()._outputs.output_folder,
-                'to': 'results/direct'
+                'to': 'results'
             }
         ]
 
@@ -309,7 +267,7 @@ class AnnualDaylightEntryPoint(DAG):
         needs=[parse_sun_up_hours, annual_daylight_raytracing, restructure_results]
     )
     def calculate_annual_metrics(
-        self, folder='results/total', schedule=schedule, thresholds=thresholds
+        self, folder='results', schedule=schedule, thresholds=thresholds
     ):
         return [
             {
@@ -319,15 +277,9 @@ class AnnualDaylightEntryPoint(DAG):
         ]
 
     results = Outputs.folder(
-        source='results/total', description='Folder with raw result files (.ill) that '
+        source='results', description='Folder with raw result files (.ill) that '
         'contain illuminance matrices for each sensor at each timestep of the analysis.',
         alias=annual_daylight_results
-    )
-
-    results_direct = Outputs.folder(
-        source='results/direct', description='Folder with raw result files (.ill) that '
-        'contain matrices for just the direct illuminance.',
-        alias=annual_daylight_direct_results
     )
 
     metrics = Outputs.folder(
