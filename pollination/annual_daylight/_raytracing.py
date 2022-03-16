@@ -65,21 +65,18 @@ class AnnualDaylightRayTracing(DAG):
     @task(template=DaylightContribution)
     def direct_sunlight(
         self,
-        name=grid_name,
         radiance_parameters=radiance_parameters,
-        fixed_radiance_parameters='-aa 0.0 -I -ab 0 -dc 1.0 -dt 0.0 -dj 0.0 -dr 0',
+        fixed_radiance_parameters='-aa 0.0 -I -faf -ab 0 -dc 1.0 -dt 0.0 -dj 0.0 -dr 0',
         sensor_count=sensor_count,
         modifiers=sun_modifiers,
         sensor_grid=sensor_grid,
-        conversion='47.4 119.9 11.6',
-        output_format='a',  # make it ascii so we expose the file as a separate output
         scene_file=octree_file_with_suns,
         bsdf_folder=bsdfs
     ):
         return [
             {
                 'from': DaylightContribution()._outputs.result_file,
-                'to': '../final/direct/{{self.name}}.ill'
+                'to': 'direct_sunlight.ill'
             }
         ]
 
@@ -91,7 +88,6 @@ class AnnualDaylightRayTracing(DAG):
         sensor_count=sensor_count,
         sky_matrix=sky_matrix_direct, sky_dome=sky_dome,
         sensor_grid=sensor_grid,
-        conversion='47.4 119.9 11.6',
         scene_file=octree_file,
         bsdf_folder=bsdfs
     ):
@@ -110,7 +106,6 @@ class AnnualDaylightRayTracing(DAG):
         sensor_count=sensor_count,
         sky_matrix=sky_matrix, sky_dome=sky_dome,
         sensor_grid=sensor_grid,
-        conversion='47.4 119.9 11.6',
         scene_file=octree_file,
         bsdf_folder=bsdfs
     ):
@@ -130,11 +125,12 @@ class AnnualDaylightRayTracing(DAG):
         name=grid_name,
         direct_sky_matrix=direct_sky._outputs.result_file,
         total_sky_matrix=total_sky._outputs.result_file,
-        sunlight_matrix=direct_sunlight._outputs.result_file
+        sunlight_matrix=direct_sunlight._outputs.result_file,
+        conversion='47.4 119.9 11.6'
     ):
         return [
             {
                 'from': AddRemoveSkyMatrix()._outputs.results_file,
-                'to': '../final/total/{{self.name}}.ill'
+                'to': '../final/{{self.name}}.ill'
             }
         ]
