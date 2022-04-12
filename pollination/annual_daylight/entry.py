@@ -6,6 +6,7 @@ from pollination.honeybee_radiance.octree import CreateOctree, CreateOctreeWithS
 from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
 from pollination.honeybee_radiance.grid import SplitGridFolder, MergeFolderData
 from pollination.honeybee_radiance.post_process import AnnualDaylightMetrics
+from pollination.honeybee_radiance.multiphase import PrepareDynamic
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
@@ -22,6 +23,7 @@ from pollination.alias.outputs.daylight import annual_daylight_results, \
 
 
 from ._raytracing import AnnualDaylightRayTracing
+from .dynamic.entry import DynamicGroup
 
 
 @dataclass
@@ -245,6 +247,63 @@ class AnnualDaylightEntryPoint(DAG):
         sunpath=generate_sunpath._outputs.sunpath,
         sun_modifiers=generate_sunpath._outputs.sun_modifiers,
         bsdfs=create_rad_folder._outputs.bsdf_folder
+    ):
+        pass
+
+    @task(template=PrepareDynamic, needs=[create_rad_folder, generate_sunpath])
+    def prepare_dynamic(
+        self, model=create_rad_folder._outputs.model_folder,
+        sunpath=generate_sunpath._outputs.sunpath, phase='2', cpu_count=cpu_count,
+        cpus_per_grid=3, min_sensor_count=min_sensor_count, static='exclude'
+    ):
+        return [
+            {
+                'from': PrepareDynamic()._outputs.scene_folder,
+                'to': 'resources/dynamic/octree'
+            },
+            {
+                'from': PrepareDynamic()._outputs.grid_folder,
+                'to': 'resources/dynamic/grid'
+            },
+            {
+                'from': PrepareDynamic()._outputs.scene_info
+            },
+            {
+                'from': PrepareDynamic()._outputs.two_phase_info
+            }
+        ]
+
+    @task(
+        template=DynamicGroup,
+        loop=prepare_dynamic._outputs.two_phase_info,
+        needs=[
+            create_rad_folder, prepare_dynamic,
+            create_total_sky, create_direct_sky, create_sky_dome,
+            generate_sunpath
+        ],
+        sub_folder='calcs/2_phase/{{item.identifier}}',
+        sub_paths={
+            'octree_file': '{{item.octree}}',
+            'octree_file_direct': '{{item.octree_direct}}',
+            'octree_file_with_suns': '{{item.octree_direct_sun}}',
+            'sensor_grids_folder': '{{item.sensor_grids_folder}}'
+        }
+    )
+    def calculate_two_phase_matrix(
+        self,
+        identifier='{{item.identifier}}',
+        radiance_parameters=radiance_parameters,
+        sensor_grids_info='{{item.sensor_grids_info}}',
+        sensor_grids_folder=prepare_dynamic._outputs.grid_folder,
+        octree_file=prepare_dynamic._outputs.scene_folder,
+        octree_file_direct=prepare_dynamic._outputs.scene_folder,
+        octree_file_with_suns=prepare_dynamic._outputs.scene_folder,
+        sky_dome=create_sky_dome._outputs.sky_dome,
+        total_sky=create_total_sky._outputs.sky_matrix,
+        direct_sky=create_direct_sky._outputs.sky_matrix,
+        sun_modifiers=generate_sunpath._outputs.sun_modifiers,
+        bsdf_folder=create_rad_folder._outputs.bsdf_folder,
+        results_folder='../../../results/dynamic'
     ):
         pass
 
