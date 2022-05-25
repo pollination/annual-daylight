@@ -303,7 +303,7 @@ class AnnualDaylightEntryPoint(DAG):
         direct_sky=create_direct_sky._outputs.sky_matrix,
         sun_modifiers=generate_sunpath._outputs.sun_modifiers,
         bsdf_folder=create_rad_folder._outputs.bsdf_folder,
-        results_folder='../../../results/dynamic'
+        results_folder='../../../results'
     ):
         pass
 
