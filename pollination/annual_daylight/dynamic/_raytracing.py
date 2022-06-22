@@ -158,6 +158,6 @@ class DynamicRayTracing(DAG):
         return [
             {
                 'from': BinaryToNpy()._outputs.output_file,
-                'to': '../final/direct/{{self.name}}.ill'
+                'to': '../final/direct_sunlight/{{self.name}}.ill'
             }
         ]
