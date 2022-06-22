@@ -5,7 +5,7 @@ from pollination.honeybee_radiance.translate import CreateRadianceFolderGrid
 from pollination.honeybee_radiance.octree import CreateOctree, CreateOctreeWithSky
 from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
 from pollination.honeybee_radiance.grid import SplitGridFolder, MergeFolderData
-from pollination.honeybee_radiance.multiphase import PrepareDynamic
+from pollination.honeybee_radiance.multiphase import PrepareMultiphase
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
@@ -137,55 +137,55 @@ class AnnualDaylightEntryPoint(DAG):
             }
         ]
 
-    @task(template=CreateOctree, needs=[create_rad_folder])
-    def create_octree(self, model=create_rad_folder._outputs.model_folder):
-        """Create octree from radiance folder."""
-        return [
-            {
-                'from': CreateOctree()._outputs.scene_file,
-                'to': 'resources/scene.oct'
-            }
-        ]
+    # @task(template=CreateOctree, needs=[create_rad_folder])
+    # def create_octree(self, model=create_rad_folder._outputs.model_folder):
+    #     """Create octree from radiance folder."""
+    #     return [
+    #         {
+    #             'from': CreateOctreeWithSky()._outputs.scene_file,
+    #             'to': 'resources/scene.oct'
+    #         }
+    #     ]
 
-    @task(
-        template=SplitGridFolder, needs=[create_rad_folder],
-        sub_paths={'input_folder': 'grid'}
-    )
-    def split_grid_folder(
-        self, input_folder=create_rad_folder._outputs.model_folder,
-        cpu_count=cpu_count, cpus_per_grid=3, min_sensor_count=min_sensor_count
-    ):
-        """Split sensor grid folder based on the number of CPUs"""
-        return [
-            {
-                'from': SplitGridFolder()._outputs.output_folder,
-                'to': 'resources/grid'
-            },
-            {
-                'from': SplitGridFolder()._outputs.dist_info,
-                'to': 'initial_results/final/_redist_info.json'
-            },
-            {
-                'from': SplitGridFolder()._outputs.sensor_grids,
-                'description': 'Sensor grids information.'
-            }
-        ]
+    # @task(
+    #     template=SplitGridFolder, needs=[create_rad_folder],
+    #     sub_paths={'input_folder': 'grid'}
+    # )
+    # def split_grid_folder(
+    #     self, input_folder=create_rad_folder._outputs.model_folder,
+    #     cpu_count=cpu_count, cpus_per_grid=3, min_sensor_count=min_sensor_count
+    # ):
+    #     """Split sensor grid folder based on the number of CPUs"""
+    #     return [
+    #         {
+    #             'from': SplitGridFolder()._outputs.output_folder,
+    #             'to': 'resources/grid'
+    #         },
+    #         {
+    #             'from': SplitGridFolder()._outputs.dist_info,
+    #             'to': 'initial_results/final/_redist_info.json'
+    #         },
+    #         {
+    #             'from': SplitGridFolder()._outputs.sensor_grids,
+    #             'description': 'Sensor grids information.'
+    #         }
+    #     ]
 
-    @task(
-        template=CreateOctreeWithSky, needs=[
-            generate_sunpath, create_rad_folder]
-    )
-    def create_octree_with_suns(
-        self, model=create_rad_folder._outputs.model_folder,
-        sky=generate_sunpath._outputs.sunpath
-    ):
-        """Create octree from radiance folder and sunpath for direct studies."""
-        return [
-            {
-                'from': CreateOctreeWithSky()._outputs.scene_file,
-                'to': 'resources/scene_with_suns.oct'
-            }
-        ]
+    # @task(
+    #     template=CreateOctreeWithSky, needs=[
+    #         generate_sunpath, create_rad_folder]
+    # )
+    # def create_octree_with_suns(
+    #     self, model=create_rad_folder._outputs.model_folder,
+    #     sky=generate_sunpath._outputs.sunpath
+    # ):
+    #     """Create octree from radiance folder and sunpath for direct studies."""
+    #     return [
+    #         {
+    #             'from': CreateOctreeWithSky()._outputs.scene_file,
+    #             'to': 'resources/scene_with_suns.oct'
+    #         }
+    #     ]
 
     @task(template=CreateSkyDome)
     def create_sky_dome(self):
@@ -250,34 +250,37 @@ class AnnualDaylightEntryPoint(DAG):
     # ):
     #     pass
 
-    @task(template=PrepareDynamic, needs=[create_rad_folder, generate_sunpath])
-    def prepare_dynamic(
+    @task(template=PrepareMultiphase, needs=[create_rad_folder, generate_sunpath])
+    def prepare_multiphase(
         self, model=create_rad_folder._outputs.model_folder,
         sunpath=generate_sunpath._outputs.sunpath, phase='2', cpu_count=cpu_count,
         cpus_per_grid=3, min_sensor_count=min_sensor_count, static='include'
     ):
         return [
             {
-                'from': PrepareDynamic()._outputs.scene_folder,
+                'from': PrepareMultiphase()._outputs.scene_folder,
                 'to': 'resources/dynamic/octree'
             },
             {
-                'from': PrepareDynamic()._outputs.grid_folder,
+                'from': PrepareMultiphase()._outputs.grid_folder,
                 'to': 'resources/dynamic/grid'
             },
             {
-                'from': PrepareDynamic()._outputs.scene_info
+                'from': PrepareMultiphase()._outputs.scene_info
             },
             {
-                'from': PrepareDynamic()._outputs.two_phase_info
+                'from': PrepareMultiphase()._outputs.two_phase_info
+            },
+            {   'from': PrepareMultiphase()._outputs.grid_states_file,
+                'to': 'results/grid_states.json'
             }
         ]
 
     @task(
         template=DynamicGroup,
-        loop=prepare_dynamic._outputs.two_phase_info,
+        loop=prepare_multiphase._outputs.two_phase_info,
         needs=[
-            create_rad_folder, prepare_dynamic,
+            create_rad_folder, prepare_multiphase,
             create_total_sky, create_direct_sky, create_sky_dome,
             generate_sunpath
         ],
@@ -295,10 +298,10 @@ class AnnualDaylightEntryPoint(DAG):
         light_path='{{item.light_path}}',
         radiance_parameters=radiance_parameters,
         sensor_grids_info='{{item.sensor_grids_info}}',
-        sensor_grids_folder=prepare_dynamic._outputs.grid_folder,
-        octree_file=prepare_dynamic._outputs.scene_folder,
-        octree_file_direct=prepare_dynamic._outputs.scene_folder,
-        octree_file_with_suns=prepare_dynamic._outputs.scene_folder,
+        sensor_grids_folder=prepare_multiphase._outputs.grid_folder,
+        octree_file=prepare_multiphase._outputs.scene_folder,
+        octree_file_direct=prepare_multiphase._outputs.scene_folder,
+        octree_file_with_suns=prepare_multiphase._outputs.scene_folder,
         sky_dome=create_sky_dome._outputs.sky_dome,
         total_sky=create_total_sky._outputs.sky_matrix,
         direct_sky=create_direct_sky._outputs.sky_matrix,
