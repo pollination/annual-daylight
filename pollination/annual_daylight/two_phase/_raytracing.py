@@ -9,7 +9,7 @@ from pollination.honeybee_radiance_postprocess.sky import AddRemoveSkyMatrix
 from pollination.honeybee_radiance_postprocess.translate import BinaryToNpy
 
 @dataclass
-class DynamicRayTracing(DAG):
+class AnnualDaylightRayTracing(DAG):
     # inputs
 
     radiance_parameters = Inputs.str(

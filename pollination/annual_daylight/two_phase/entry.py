@@ -3,12 +3,12 @@ from pollination_dsl.dag.inputs import ItemType
 from dataclasses import dataclass
 from pollination.honeybee_radiance_postprocess.grid import MergeFolderData
 
-from ._raytracing import DynamicRayTracing
+from ._raytracing import AnnualDaylightRayTracing
 
 
 @dataclass
-class DynamicGroup(DAG):
-    """Dynamic entry point.
+class TwoPhase(DAG):
+    """Two phase entry point.
 
     This two phase workflow also includes the extra phase for accurately calculating the
     direct sunlight.
@@ -90,7 +90,7 @@ class DynamicGroup(DAG):
     )
 
     @task(
-        template=DynamicRayTracing,
+        template=AnnualDaylightRayTracing,
         loop=sensor_grids_info,
         # create a subfolder for each grid
         sub_folder='initial_results/{{item.full_id}}',
