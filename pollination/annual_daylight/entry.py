@@ -57,7 +57,7 @@ class AnnualDaylightEntryPoint(DAG):
 
     radiance_parameters = Inputs.str(
         description='The radiance parameters for ray tracing.',
-        default='-ab 2 -ad 5000 -lw 2e-05',
+        default='-ab 2 -ad 5000 -lw 2e-05 -dr 0',
         alias=rad_par_annual_input
     )
 
@@ -140,7 +140,7 @@ class AnnualDaylightEntryPoint(DAG):
         """Create octree from radiance folder."""
         return [
             {
-                'from': CreateOctreeWithSky()._outputs.scene_file,
+                'from': CreateOctree()._outputs.scene_file,
                 'to': 'resources/scene.oct'
             }
         ]
