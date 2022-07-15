@@ -198,9 +198,8 @@ class AnnualDaylightEntryPoint(DAG):
         template=TwoPhase,
         loop=prepare_multiphase._outputs.two_phase_info,
         needs=[
-            create_rad_folder, prepare_multiphase,
-            create_total_sky, create_direct_sky, create_sky_dome,
-            generate_sunpath
+            create_rad_folder, prepare_multiphase, create_total_sky,
+            create_direct_sky, create_sky_dome, generate_sunpath
         ],
         sub_folder='calcs/2_phase/{{item.identifier}}',
         sub_paths={
