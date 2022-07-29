@@ -143,13 +143,13 @@ class TwoPhase(DAG):
     )
     def restructure_direct_sunlight_results(
         self, identifier=identifier, light_path=light_path,
-        input_folder='initial_results/final/direct_sunlight',
+        input_folder='initial_results/final/direct',
         extension='ill', dist_info=sensor_grids_folder,
         results_folder=results_folder
     ):
         return [
             {
                 'from': MergeFolderData()._outputs.output_folder,
-                'to': '{{self.results_folder}}/{{self.light_path}}/{{self.identifier}}/direct_sunlight'
+                'to': '{{self.results_folder}}/{{self.light_path}}/{{self.identifier}}/direct'
             }
         ]

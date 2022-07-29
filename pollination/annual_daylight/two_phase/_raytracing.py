@@ -158,6 +158,6 @@ class AnnualDaylightRayTracing(DAG):
         return [
             {
                 'from': BinaryToNpy()._outputs.output_file,
-                'to': '../final/direct_sunlight/{{self.name}}.ill'
+                'to': '../final/direct/{{self.name}}.ill'
             }
         ]
