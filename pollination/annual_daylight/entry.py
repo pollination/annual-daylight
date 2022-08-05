@@ -15,8 +15,7 @@ from pollination.alias.inputs.radiancepar import rad_par_annual_input, \
 from pollination.alias.inputs.grid import grid_filter_input, \
     min_sensor_count_input, cpu_count
 from pollination.alias.inputs.schedule import schedule_csv_input
-from pollination.alias.outputs.daylight import annual_daylight_results, \
-    annual_daylight_direct_results, daylight_autonomy_results, \
+from pollination.alias.outputs.daylight import daylight_autonomy_results, \
     continuous_daylight_autonomy_results, \
     udi_results, udi_lower_results, udi_upper_results
 
@@ -244,8 +243,7 @@ class AnnualDaylightEntryPoint(DAG):
 
     results = Outputs.folder(
         source='results', description='Folder with raw result files (.ill) that '
-        'contain illuminance matrices for each sensor at each timestep of the analysis.',
-        alias=annual_daylight_results
+        'contain illuminance matrices for each sensor at each timestep of the analysis.'
     )
 
     metrics = Outputs.folder(
