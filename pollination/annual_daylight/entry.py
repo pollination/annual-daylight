@@ -183,9 +183,6 @@ class AnnualDaylightEntryPoint(DAG):
                 'to': 'resources/dynamic/grid'
             },
             {
-                'from': PrepareMultiphase()._outputs.scene_info
-            },
-            {
                 'from': PrepareMultiphase()._outputs.two_phase_info
             },
             {   'from': PrepareMultiphase()._outputs.grid_states_file,
