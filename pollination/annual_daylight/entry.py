@@ -1,9 +1,6 @@
 from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
-from pollination.honeybee_radiance.sun import CreateSunMatrix, ParseSunUpHours
-from pollination.honeybee_radiance.translate import CreateRadianceFolderGrid
-from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
-from pollination.honeybee_radiance.multiphase import PrepareMultiphase
+from pollination.two_phase_daylight_coefficient import TwoPhaseDaylightCoefficientEntryPoint
 from pollination.honeybee_radiance_postprocess.post_process import AnnualDaylightMetrics
 
 # input/output alias
@@ -18,8 +15,6 @@ from pollination.alias.inputs.schedule import schedule_csv_input
 from pollination.alias.outputs.daylight import daylight_autonomy_results, \
     continuous_daylight_autonomy_results, \
     udi_results, udi_lower_results, udi_upper_results
-
-from .two_phase.entry import TwoPhase
 
 
 @dataclass
@@ -99,137 +94,23 @@ class AnnualDaylightEntryPoint(DAG):
         alias=daylight_thresholds_input
     )
 
-    @task(template=CreateSunMatrix)
-    def generate_sunpath(self, north=north, wea=wea):
-        """Create sunpath for sun-up-hours."""
-        return [
-            {'from': CreateSunMatrix()._outputs.sunpath,
-             'to': 'resources/sunpath.mtx'},
-            {
-                'from': CreateSunMatrix()._outputs.sun_modifiers,
-                'to': 'resources/suns.mod'
-            }
-        ]
-
-    @task(template=CreateRadianceFolderGrid)
-    def create_rad_folder(self, input_model=model, grid_filter=grid_filter):
-        """Translate the input model to a radiance folder."""
-        return [
-            {
-                'from': CreateRadianceFolderGrid()._outputs.model_folder,
-                'to': 'model'
-            },
-            {
-                'from': CreateRadianceFolderGrid()._outputs.bsdf_folder,
-                'to': 'model/bsdf'
-            },
-            {
-                'from': CreateRadianceFolderGrid()._outputs.sensor_grids_file,
-                'to': 'results/grids_info.json'
-            },
-            {
-                'from': CreateRadianceFolderGrid()._outputs.sensor_grids,
-                'description': 'Sensor grids information.'
-            }
-        ]
-
-    @task(template=CreateSkyDome)
-    def create_sky_dome(self):
-        """Create sky dome for daylight coefficient studies."""
-        return [
-            {'from': CreateSkyDome()._outputs.sky_dome, 'to': 'resources/sky.dome'}
-        ]
-
-    @task(template=CreateSkyMatrix)
-    def create_total_sky(self, north=north, wea=wea, sun_up_hours='sun-up-hours'):
-        return [
-            {'from': CreateSkyMatrix()._outputs.sky_matrix,
-             'to': 'resources/sky.mtx'}
-        ]
-
-    @task(template=CreateSkyMatrix)
-    def create_direct_sky(
-        self, north=north, wea=wea, sky_type='sun-only', sun_up_hours='sun-up-hours'
-    ):
-        return [
-            {
-                'from': CreateSkyMatrix()._outputs.sky_matrix,
-                'to': 'resources/sky_direct.mtx'
-            }
-        ]
-
-    @task(template=ParseSunUpHours, needs=[generate_sunpath])
-    def parse_sun_up_hours(self, sun_modifiers=generate_sunpath._outputs.sun_modifiers):
-        return [
-            {
-                'from': ParseSunUpHours()._outputs.sun_up_hours,
-                'to': 'results/sun-up-hours.txt'
-            }
-        ]
-
-    @task(template=PrepareMultiphase, needs=[create_rad_folder, generate_sunpath])
-    def prepare_multiphase(
-        self, model=create_rad_folder._outputs.model_folder,
-        sunpath=generate_sunpath._outputs.sunpath, phase=2, cpu_count=cpu_count,
-        cpus_per_grid=3, min_sensor_count=min_sensor_count, static='include'
-    ):
-        return [
-            {
-                'from': PrepareMultiphase()._outputs.scene_folder,
-                'to': 'resources/dynamic/octree'
-            },
-            {
-                'from': PrepareMultiphase()._outputs.grid_folder,
-                'to': 'resources/dynamic/grid'
-            },
-            {
-                'from': PrepareMultiphase()._outputs.two_phase_info
-            },
-            {   'from': PrepareMultiphase()._outputs.grid_states_file,
-                'to': 'results/grid_states.json'
-            }
-        ]
-
     @task(
-        template=TwoPhase,
-        loop=prepare_multiphase._outputs.two_phase_info,
-        needs=[
-            create_rad_folder, prepare_multiphase, create_total_sky,
-            create_direct_sky, create_sky_dome, generate_sunpath
-        ],
-        sub_folder='calcs/2_phase/{{item.identifier}}',
-        sub_paths={
-            'octree_file': '{{item.octree}}',
-            'octree_file_direct': '{{item.octree_direct}}',
-            'octree_file_with_suns': '{{item.octree_direct_sun}}',
-            'sensor_grids_folder': '{{item.sensor_grids_folder}}'
-        }
+        template=TwoPhaseDaylightCoefficientEntryPoint
     )
-    def calculate_two_phase_matrix(
-        self,
-        identifier='{{item.identifier}}',
-        light_path='{{item.light_path}}',
-        radiance_parameters=radiance_parameters,
-        sensor_grids_info='{{item.sensor_grids_info}}',
-        sensor_grids_folder=prepare_multiphase._outputs.grid_folder,
-        octree_file=prepare_multiphase._outputs.scene_folder,
-        octree_file_direct=prepare_multiphase._outputs.scene_folder,
-        octree_file_with_suns=prepare_multiphase._outputs.scene_folder,
-        sky_dome=create_sky_dome._outputs.sky_dome,
-        total_sky=create_total_sky._outputs.sky_matrix,
-        direct_sky=create_direct_sky._outputs.sky_matrix,
-        sun_modifiers=generate_sunpath._outputs.sun_modifiers,
-        bsdf_folder=create_rad_folder._outputs.bsdf_folder,
-        results_folder='../../../results'
+    def run_two_phase_daylight_coefficient(
+            self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
+            radiance_parameters=radiance_parameters, grid_filter=grid_filter,
+            model=model, wea=wea
     ):
         pass
 
     @task(
         template=AnnualDaylightMetrics,
-        needs=[calculate_two_phase_matrix]
+        needs=[run_two_phase_daylight_coefficient]
     )
     def calculate_annual_metrics(
-        self, folder='results', schedule=schedule, thresholds=thresholds
+        self, folder='results',
+        schedule=schedule, thresholds=thresholds
     ):
         return [
             {
