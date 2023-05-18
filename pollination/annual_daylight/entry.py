@@ -192,3 +192,34 @@ class AnnualDaylightEntryPoint(DAG):
         source='results', description='Folder with raw result files (.ill) that '
         'contain illuminance matrices for each sensor at each timestep of the analysis.'
     )
+
+    metrics = Outputs.folder(
+        source='metrics', description='Annual metrics folder.'
+    )
+
+    da = Outputs.folder(
+        source='metrics/da', description='Daylight autonomy results.',
+        alias=daylight_autonomy_results
+    )
+
+    cda = Outputs.folder(
+        source='metrics/cda', description='Continuous daylight autonomy results.',
+        alias=continuous_daylight_autonomy_results
+    )
+
+    udi = Outputs.folder(
+        source='metrics/udi', description='Useful daylight illuminance results.',
+        alias=udi_results
+    )
+
+    udi_lower = Outputs.folder(
+        source='metrics/udi_lower', description='Results for the percent of time that '
+        'is below the lower threshold of useful daylight illuminance.',
+        alias=udi_lower_results
+    )
+
+    udi_upper = Outputs.folder(
+        source='metrics/udi_upper', description='Results for the percent of time that '
+        'is above the upper threshold of useful daylight illuminance.',
+        alias=udi_upper_results
+    )
