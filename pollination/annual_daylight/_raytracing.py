@@ -100,6 +100,7 @@ class AnnualDaylightRayTracing(DAG):
     )
     def annual_metrics_file(
         self,
+        name=grid_name,
         file=total_sky._outputs.result_file,
         sun_up_hours=sun_up_hours,
         schedule=schedule,
