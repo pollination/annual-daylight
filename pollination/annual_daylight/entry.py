@@ -1,5 +1,7 @@
 from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
+from pollination.honeybee_radiance_postprocess.grid import MergeFolderData, \
+    MergeFolderMetrics
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
@@ -17,7 +19,6 @@ from pollination.alias.outputs.daylight import daylight_autonomy_results, \
 
 from ._prepare_folder import AnnualDaylightPrepareFolder
 from ._raytracing import AnnualDaylightRayTracing
-from ._post_process import AnnualDaylightPostProcess
 
 
 @dataclass
@@ -152,53 +153,42 @@ class AnnualDaylightEntryPoint(DAG):
         pass
 
     @task(
-        template=AnnualDaylightPostProcess,
+        template=MergeFolderData,
         needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
         sub_paths={
-            'dist_info': 'grid/_redist_info.json',
-            'grids_info': 'grids_info.json'
+            'dist_info': 'grid/_redist_info.json'
         }
     )
-    def post_process_annual_daylight(
-        self, initial_results='initial_results',
-        dist_info=prepare_folder_annual_daylight._outputs.resources,
-        grids_info=prepare_folder_annual_daylight._outputs.results,
-        model=model
-        ):
+    def restructure_results(
+        self, input_folder='initial_results/final', extension='ill',
+        dist_info=prepare_folder_annual_daylight._outputs.resources
+    ):
         return [
             {
-                'from': AnnualDaylightPostProcess()._outputs.metrics,
+                'from': MergeFolderData()._outputs.output_folder,
+                'to': 'results/__static_apertures__/default/total'
+            }
+        ]
+
+    @task(
+        template=MergeFolderMetrics,
+        needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
+        sub_paths={
+            'dist_info': 'grid/_redist_info.json'
+        }
+    )
+    def restructure_metrics(
+        self, input_folder='initial_results/metrics',
+        dist_info=prepare_folder_annual_daylight._outputs.resources
+    ):
+        return [
+            {
+                'from': MergeFolderMetrics()._outputs.output_folder,
                 'to': 'metrics'
             }
         ]
 
-    metrics = Outputs.folder(
-        source='metrics', description='Annual metrics folder.'
-    )
-
-    da = Outputs.folder(
-        source='metrics/da', description='Daylight autonomy results.',
-        alias=daylight_autonomy_results
-    )
-
-    cda = Outputs.folder(
-        source='metrics/cda', description='Continuous daylight autonomy results.',
-        alias=continuous_daylight_autonomy_results
-    )
-
-    udi = Outputs.folder(
-        source='metrics/udi', description='Useful daylight illuminance results.',
-        alias=udi_results
-    )
-
-    udi_lower = Outputs.folder(
-        source='metrics/udi_lower', description='Results for the percent of time that '
-        'is below the lower threshold of useful daylight illuminance.',
-        alias=udi_lower_results
-    )
-
-    udi_upper = Outputs.folder(
-        source='metrics/udi_upper', description='Results for the percent of time that '
-        'is above the upper threshold of useful daylight illuminance.',
-        alias=udi_upper_results
+    results = Outputs.folder(
+        source='results', description='Folder with raw result files (.ill) that '
+        'contain illuminance matrices for each sensor at each timestep of the analysis.'
     )
