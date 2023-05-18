@@ -1,7 +1,7 @@
 from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
-from pollination.two_phase_daylight_coefficient import TwoPhaseDaylightCoefficientEntryPoint
-from pollination.honeybee_radiance_postprocess.post_process import AnnualDaylightMetrics
+from pollination.honeybee_radiance_postprocess.grid import MergeFolderData, \
+    MergeFolderMetrics
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
@@ -15,6 +15,10 @@ from pollination.alias.inputs.schedule import schedule_csv_input
 from pollination.alias.outputs.daylight import daylight_autonomy_results, \
     continuous_daylight_autonomy_results, \
     udi_results, udi_lower_results, udi_upper_results
+
+
+from ._prepare_folder import AnnualDaylightPrepareFolder
+from ._raytracing import AnnualDaylightRayTracing
 
 
 @dataclass
@@ -94,27 +98,92 @@ class AnnualDaylightEntryPoint(DAG):
         alias=daylight_thresholds_input
     )
 
+    @task(template=AnnualDaylightPrepareFolder)
+    def prepare_folder_annual_daylight(
+        self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
+        grid_filter=grid_filter, model=model, wea=wea
+        ):
+        return [
+            {
+                'from': AnnualDaylightPrepareFolder()._outputs.model_folder,
+                'to': 'model'
+            },
+            {
+                'from': AnnualDaylightPrepareFolder()._outputs.resources,
+                'to': 'resources'
+            },
+            {
+                'from': AnnualDaylightPrepareFolder()._outputs.results,
+                'to': 'results'
+            },
+            {
+                'from': AnnualDaylightPrepareFolder()._outputs.sensor_grids
+            }
+        ]
+
     @task(
-        template=TwoPhaseDaylightCoefficientEntryPoint
+        template=AnnualDaylightRayTracing,
+        needs=[prepare_folder_annual_daylight],
+        loop=prepare_folder_annual_daylight._outputs.sensor_grids,
+        #sub_folder='initial_results/{{item.full_id}}',
+        sub_folder='initial_results',
+        sub_paths={
+            'octree_file': 'scene.oct',
+            'sensor_grid': 'grid/{{item.full_id}}.pts',
+            'sky_matrix': 'sky.mtx',
+            'sky_dome': 'sky.dome',
+            'bsdfs': 'bsdf',
+            'sun_up_hours': 'sun-up-hours.txt'
+        }
     )
-    def run_two_phase_daylight_coefficient(
-            self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
-            radiance_parameters=radiance_parameters, grid_filter=grid_filter,
-            model=model, wea=wea
+    def annual_daylight_raytracing(
+        self,
+        radiance_parameters=radiance_parameters,
+        octree_file=prepare_folder_annual_daylight._outputs.resources,
+        grid_name='{{item.full_id}}',
+        sensor_grid=prepare_folder_annual_daylight._outputs.resources,
+        sensor_count='{{item.count}}',
+        sky_matrix=prepare_folder_annual_daylight._outputs.resources,
+        sky_dome=prepare_folder_annual_daylight._outputs.resources,
+        bsdfs=prepare_folder_annual_daylight._outputs.model_folder,
+        sun_up_hours=prepare_folder_annual_daylight._outputs.results,
+        schedule=schedule,
+        thresholds=thresholds
     ):
         pass
 
     @task(
-        template=AnnualDaylightMetrics,
-        needs=[run_two_phase_daylight_coefficient]
+        template=MergeFolderData,
+        needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
+        sub_paths={
+            'dist_info': 'grid/_redist_info.json'
+        }
     )
-    def calculate_annual_metrics(
-        self, folder='results',
-        schedule=schedule, thresholds=thresholds
+    def restructure_results(
+        self, input_folder='initial_results/final', extension='ill',
+        dist_info=prepare_folder_annual_daylight._outputs.resources
     ):
         return [
             {
-                'from': AnnualDaylightMetrics()._outputs.annual_metrics,
+                'from': MergeFolderData()._outputs.output_folder,
+                'to': 'results/__static_apertures__/default/total'
+            }
+        ]
+
+    @task(
+        template=MergeFolderMetrics,
+        needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
+        sub_paths={
+            'dist_info': 'grid/_redist_info.json'
+        }
+    )
+    def restructure_metrics(
+        self, input_folder='initial_results/metrics',
+        dist_info=prepare_folder_annual_daylight._outputs.resources
+    ):
+        return [
+            {
+                'from': MergeFolderMetrics()._outputs.output_folder,
                 'to': 'metrics'
             }
         ]
@@ -122,35 +191,4 @@ class AnnualDaylightEntryPoint(DAG):
     results = Outputs.folder(
         source='results', description='Folder with raw result files (.ill) that '
         'contain illuminance matrices for each sensor at each timestep of the analysis.'
-    )
-
-    metrics = Outputs.folder(
-        source='metrics', description='Annual metrics folder.'
-    )
-
-    da = Outputs.folder(
-        source='metrics/da', description='Daylight autonomy results.',
-        alias=daylight_autonomy_results
-    )
-
-    cda = Outputs.folder(
-        source='metrics/cda', description='Continuous daylight autonomy results.',
-        alias=continuous_daylight_autonomy_results
-    )
-
-    udi = Outputs.folder(
-        source='metrics/udi', description='Useful daylight illuminance results.',
-        alias=udi_results
-    )
-
-    udi_lower = Outputs.folder(
-        source='metrics/udi_lower', description='Results for the percent of time that '
-        'is below the lower threshold of useful daylight illuminance.',
-        alias=udi_lower_results
-    )
-
-    udi_upper = Outputs.folder(
-        source='metrics/udi_upper', description='Results for the percent of time that '
-        'is above the upper threshold of useful daylight illuminance.',
-        alias=udi_upper_results
     )
