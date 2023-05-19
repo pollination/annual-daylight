@@ -1,7 +1,5 @@
 from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
-from pollination.honeybee_radiance_postprocess.grid import MergeFolderData, \
-    MergeFolderMetrics
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
@@ -19,6 +17,7 @@ from pollination.alias.outputs.daylight import daylight_autonomy_results, \
 
 from ._prepare_folder import AnnualDaylightPrepareFolder
 from ._raytracing import AnnualDaylightRayTracing
+from ._post_process import AnnualDaylightPostProcess
 
 
 @dataclass
@@ -153,40 +152,38 @@ class AnnualDaylightEntryPoint(DAG):
         pass
 
     @task(
-        template=MergeFolderData,
+        template=AnnualDaylightPostProcess,
         needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
         sub_paths={
-            'dist_info': 'grid/_redist_info.json'
+            'dist_info': 'grid/_redist_info.json',
+            'grids_info': 'grids_info.json'
         }
     )
-    def restructure_results(
-        self, input_folder='initial_results/final', extension='ill',
-        dist_info=prepare_folder_annual_daylight._outputs.resources
-    ):
+    def post_process_annual_daylight(
+        self, initial_results='initial_results',
+        dist_info=prepare_folder_annual_daylight._outputs.resources,
+        grids_info=prepare_folder_annual_daylight._outputs.results,
+        model=model
+        ):
         return [
             {
-                'from': MergeFolderData()._outputs.output_folder,
-                'to': 'results/__static_apertures__/default/total'
+                'from': AnnualDaylightPostProcess()._outputs.results,
+                'to': 'results'
+            },
+            {
+                'from': AnnualDaylightPostProcess()._outputs.metrics,
+                'to': 'metrics'
+            },
+            {
+                'from': AnnualDaylightPostProcess()._outputs.visualization,
+                'to': 'visualization.vsf'
             }
         ]
 
-    @task(
-        template=MergeFolderMetrics,
-        needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
-        sub_paths={
-            'dist_info': 'grid/_redist_info.json'
-        }
+    visualization = Outputs.file(
+        source='visualization.vsf',
+        description='Result visualization in VisualizationSet format.'
     )
-    def restructure_metrics(
-        self, input_folder='initial_results/metrics',
-        dist_info=prepare_folder_annual_daylight._outputs.resources
-    ):
-        return [
-            {
-                'from': MergeFolderMetrics()._outputs.output_folder,
-                'to': 'metrics'
-            }
-        ]
 
     results = Outputs.folder(
         source='results', description='Folder with raw result files (.ill) that '
