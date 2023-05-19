@@ -110,7 +110,7 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
     )
     def split_grid_folder(
         self, input_folder=create_rad_folder._outputs.model_folder,
-        cpu_count=cpu_count, cpus_per_grid=3, min_sensor_count=min_sensor_count
+        cpu_count=cpu_count, cpus_per_grid=1, min_sensor_count=min_sensor_count
     ):
         """Split sensor grid folder based on the number of CPUs"""
         return [
