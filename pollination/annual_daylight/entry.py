@@ -166,6 +166,10 @@ class AnnualDaylightEntryPoint(DAG):
         ):
         return [
             {
+                'from': AnnualDaylightPostProcess()._outputs.results,
+                'to': 'results'
+            },
+            {
                 'from': AnnualDaylightPostProcess()._outputs.metrics,
                 'to': 'metrics'
             },
@@ -178,6 +182,11 @@ class AnnualDaylightEntryPoint(DAG):
     visualization = Outputs.file(
         source='visualization.vsf',
         description='Result visualization in VisualizationSet format.'
+    )
+
+    results = Outputs.folder(
+        source='results', description='Folder with raw result files (.ill) that '
+        'contain illuminance matrices for each sensor at each timestep of the analysis.'
     )
 
     metrics = Outputs.folder(
