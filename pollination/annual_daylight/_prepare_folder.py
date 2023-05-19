@@ -1,3 +1,4 @@
+"""Prepare folder DAG for annual daylight."""
 from dataclasses import dataclass
 from pollination_dsl.dag import Inputs, GroupedDAG, task, Outputs
 from pollination.path.copy import CopyFile
@@ -79,7 +80,7 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
             }
         ]
 
-    @task(template=CreateRadianceFolderGrid)
+    @task(template=CreateRadianceFolderGrid, annotations={'main_task': True})
     def create_rad_folder(self, input_model=model, grid_filter=grid_filter):
         """Translate the input model to a radiance folder."""
         return [
