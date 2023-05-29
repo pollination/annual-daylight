@@ -1,2 +1,2 @@
-pollination-two-phase-daylight-coefficient==1.1.0
+pollination-two-phase-daylight-coefficient==1.1.1
 pollination-dsl>=0.14.3
