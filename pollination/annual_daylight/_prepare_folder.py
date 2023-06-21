@@ -1,7 +1,6 @@
 """Prepare folder DAG for annual daylight."""
 from dataclasses import dataclass
 from pollination_dsl.dag import Inputs, GroupedDAG, task, Outputs
-from pollination.path.copy import CopyFile
 from pollination.honeybee_radiance.sun import CreateSunMatrix, ParseSunUpHours
 from pollination.honeybee_radiance.translate import CreateRadianceFolderGrid
 from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
