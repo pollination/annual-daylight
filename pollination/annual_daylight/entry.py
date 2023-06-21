@@ -137,6 +137,11 @@ class AnnualDaylightEntryPoint(DAG):
         description='Annual daylight result visualization in VisualizationSet format.'
     )
 
+    results = Outputs.folder(
+        source='results', description='Folder with raw result files (.ill) that '
+        'contain illuminance matrices for each sensor at each timestep of the analysis.'
+    )
+
     metrics = Outputs.folder(
         source='metrics', description='Annual metrics folder.'
     )
