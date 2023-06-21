@@ -124,7 +124,6 @@ class AnnualDaylightEntryPoint(DAG):
         template=AnnualDaylightRayTracing,
         needs=[prepare_folder_annual_daylight],
         loop=prepare_folder_annual_daylight._outputs.sensor_grids,
-        #sub_folder='initial_results/{{item.full_id}}',
         sub_folder='initial_results',
         sub_paths={
             'octree_file': 'scene.oct',
@@ -171,6 +170,11 @@ class AnnualDaylightEntryPoint(DAG):
                 'to': 'metrics'
             }
         ]
+
+    visualization = Outputs.file(
+        source='visualization.vsf',
+        description='Result visualization in VisualizationSet format.'
+    )
 
     metrics = Outputs.folder(
         source='metrics', description='Annual metrics folder.'

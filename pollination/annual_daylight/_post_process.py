@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from pollination_dsl.dag import Inputs, GroupedDAG, task, Outputs
 from pollination.honeybee_radiance_postprocess.grid import MergeFolderMetrics
+from pollination.honeybee_display.translate import ModelToVis
 
 
 @dataclass
@@ -45,6 +46,18 @@ class AnnualDaylightPostProcess(GroupedDAG):
             {
                 'from': MergeFolderMetrics()._outputs.output_folder,
                 'to': 'metrics'
+            }
+        ]
+
+    @task(template=ModelToVis, needs=[restructure_metrics])
+    def create_vsf(
+        self, model=model, grid_data='metrics', active_grid_data='udi',
+        output_format='vsf'
+    ):
+        return [
+            {
+                'from': ModelToVis()._outputs.output_file,
+                'to': 'visualization.vsf'
             }
         ]
 
