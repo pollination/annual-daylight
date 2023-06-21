@@ -170,16 +170,8 @@ class AnnualDaylightEntryPoint(DAG):
         ):
         return [
             {
-                'from': AnnualDaylightPostProcess()._outputs.results,
-                'to': 'results'
-            },
-            {
                 'from': AnnualDaylightPostProcess()._outputs.metrics,
                 'to': 'metrics'
-            },
-            {
-                'from': AnnualDaylightPostProcess()._outputs.visualization,
-                'to': 'visualization.vsf'
             }
         ]
 
