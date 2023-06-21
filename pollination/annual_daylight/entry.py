@@ -171,6 +171,11 @@ class AnnualDaylightEntryPoint(DAG):
             }
         ]
 
+    visualization = Outputs.file(
+        source='visualization.vsf',
+        description='Result visualization in VisualizationSet format.'
+    )
+
     metrics = Outputs.folder(
         source='metrics', description='Annual metrics folder.'
     )
