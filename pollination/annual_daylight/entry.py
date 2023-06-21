@@ -1,5 +1,7 @@
 from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
+from pollination.two_phase_daylight_coefficient import TwoPhaseDaylightCoefficientEntryPoint
+from pollination.honeybee_radiance_postprocess.post_process import AnnualDaylightMetrics
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
@@ -13,11 +15,6 @@ from pollination.alias.inputs.schedule import schedule_csv_input
 from pollination.alias.outputs.daylight import daylight_autonomy_results, \
     continuous_daylight_autonomy_results, \
     udi_results, udi_lower_results, udi_upper_results
-
-
-from ._prepare_folder import AnnualDaylightPrepareFolder
-from ._raytracing import AnnualDaylightRayTracing
-from ._post_process import AnnualDaylightPostProcess
 
 
 @dataclass
@@ -97,77 +94,27 @@ class AnnualDaylightEntryPoint(DAG):
         alias=daylight_thresholds_input
     )
 
-    @task(template=AnnualDaylightPrepareFolder)
-    def prepare_folder_annual_daylight(
-        self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
-        grid_filter=grid_filter, model=model, wea=wea
-        ):
-        return [
-            {
-                'from': AnnualDaylightPrepareFolder()._outputs.model_folder,
-                'to': 'model'
-            },
-            {
-                'from': AnnualDaylightPrepareFolder()._outputs.resources,
-                'to': 'resources'
-            },
-            {
-                'from': AnnualDaylightPrepareFolder()._outputs.results,
-                'to': 'results'
-            },
-            {
-                'from': AnnualDaylightPrepareFolder()._outputs.sensor_grids
-            }
-        ]
-
     @task(
-        template=AnnualDaylightRayTracing,
-        needs=[prepare_folder_annual_daylight],
-        loop=prepare_folder_annual_daylight._outputs.sensor_grids,
-        #sub_folder='initial_results/{{item.full_id}}',
-        sub_folder='initial_results',
-        sub_paths={
-            'octree_file': 'scene.oct',
-            'sensor_grid': 'grid/{{item.full_id}}.pts',
-            'sky_matrix': 'sky.mtx',
-            'sky_dome': 'sky.dome',
-            'bsdfs': 'bsdf',
-            'sun_up_hours': 'sun-up-hours.txt'
-        }
+        template=TwoPhaseDaylightCoefficientEntryPoint
     )
-    def annual_daylight_raytracing(
-        self,
-        radiance_parameters=radiance_parameters,
-        octree_file=prepare_folder_annual_daylight._outputs.resources,
-        grid_name='{{item.full_id}}',
-        sensor_grid=prepare_folder_annual_daylight._outputs.resources,
-        sensor_count='{{item.count}}',
-        sky_matrix=prepare_folder_annual_daylight._outputs.resources,
-        sky_dome=prepare_folder_annual_daylight._outputs.resources,
-        bsdfs=prepare_folder_annual_daylight._outputs.model_folder,
-        sun_up_hours=prepare_folder_annual_daylight._outputs.results,
-        schedule=schedule,
-        thresholds=thresholds
+    def run_two_phase_daylight_coefficient(
+            self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
+            radiance_parameters=radiance_parameters, grid_filter=grid_filter,
+            model=model, wea=wea
     ):
         pass
 
     @task(
-        template=AnnualDaylightPostProcess,
-        needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
-        sub_paths={
-            'dist_info': 'grid/_redist_info.json',
-            'grids_info': 'grids_info.json'
-        }
+        template=AnnualDaylightMetrics,
+        needs=[run_two_phase_daylight_coefficient]
     )
-    def post_process_annual_daylight(
-        self, initial_results='initial_results',
-        dist_info=prepare_folder_annual_daylight._outputs.resources,
-        grids_info=prepare_folder_annual_daylight._outputs.results,
-        model=model
-        ):
+    def calculate_annual_metrics(
+        self, folder='results',
+        schedule=schedule, thresholds=thresholds
+    ):
         return [
             {
-                'from': AnnualDaylightPostProcess()._outputs.metrics,
+                'from': AnnualDaylightMetrics()._outputs.annual_metrics,
                 'to': 'metrics'
             }
         ]
