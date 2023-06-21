@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pollination_dsl.dag import Inputs, GroupedDAG, task, Outputs
 from pollination.honeybee_radiance_postprocess.grid import MergeFolderMetrics
 from pollination.honeybee_radiance_postprocess.post_process import GridSummaryMetrics
+from pollination.honeybee_display.translate import ModelToVis
 
 
 @dataclass
@@ -66,6 +67,23 @@ class AnnualDaylightPostProcess(GroupedDAG):
                 'to': 'grid_summary.csv'
             }
         ]
+
+    @task(template=ModelToVis, needs=[restructure_metrics])
+    def create_vsf(
+        self, model=model, grid_data='metrics', active_grid_data='udi',
+        output_format='vsf'
+    ):
+        return [
+            {
+                'from': ModelToVis()._outputs.output_file,
+                'to': 'visualization.vsf'
+            }
+        ]
+
+    visualization = Outputs.file(
+        source='visualization.vsf',
+        description='Annual daylight result visualization in VisualizationSet format.'
+    )
 
     metrics = Outputs.folder(
         source='metrics', description='metrics folder.'

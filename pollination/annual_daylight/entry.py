@@ -186,10 +186,19 @@ class AnnualDaylightEntryPoint(DAG):
                 'to': 'metrics'
             },
             {
+                'from': AnnualDaylightPostProcess()._outputs.visualization,
+                'to': 'visualization.vsf'
+            },
+            {
                 'from': AnnualDaylightPostProcess()._outputs.grid_summary,
                 'to': 'grid_summary.csv'
             }
         ]
+
+    visualization = Outputs.file(
+        source='visualization.vsf',
+        description='Result visualization in VisualizationSet format.'
+    )
 
     metrics = Outputs.folder(
         source='metrics', description='Annual metrics folder.'
