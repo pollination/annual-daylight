@@ -2,6 +2,7 @@ from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
 from pollination.two_phase_daylight_coefficient import TwoPhaseDaylightCoefficientEntryPoint
 from pollination.honeybee_radiance_postprocess.post_process import AnnualDaylightMetrics
+from pollination.honeybee_display.translate import ModelToVis
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
@@ -118,6 +119,23 @@ class AnnualDaylightEntryPoint(DAG):
                 'to': 'metrics'
             }
         ]
+
+    @task(template=ModelToVis, needs=[calculate_annual_metrics])
+    def create_vsf(
+        self, model=model, grid_data='metrics', active_grid_data='udi',
+        output_format='vsf'
+    ):
+        return [
+            {
+                'from': ModelToVis()._outputs.output_file,
+                'to': 'visualization.vsf'
+            }
+        ]
+
+    visualization = Outputs.file(
+        source='visualization.vsf',
+        description='Annual daylight result visualization in VisualizationSet format.'
+    )
 
     metrics = Outputs.folder(
         source='metrics', description='Annual metrics folder.'
