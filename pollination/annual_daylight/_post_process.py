@@ -1,9 +1,7 @@
 """Post-process DAG for annual daylight."""
 from dataclasses import dataclass
 from pollination_dsl.dag import Inputs, GroupedDAG, task, Outputs
-from pollination.honeybee_radiance_postprocess.grid import MergeFolderData, \
-    MergeFolderMetrics
-from pollination.honeybee_display.translate import ModelToVis
+from pollination.honeybee_radiance_postprocess.grid import MergeFolderMetrics
 
 
 @dataclass
@@ -33,23 +31,6 @@ class AnnualDaylightPostProcess(GroupedDAG):
     )
 
     @task(
-        template=MergeFolderData,
-        sub_paths={
-            'input_folder': 'final'
-        }
-    )
-    def restructure_results(
-        self, input_folder=initial_results, extension='ill',
-        dist_info=dist_info
-    ):
-        return [
-            {
-                'from': MergeFolderData()._outputs.output_folder,
-                'to': 'results/__static_apertures__/default/total'
-            }
-        ]
-
-    @task(
         template=MergeFolderMetrics,
         sub_paths={
             'input_folder': 'metrics'
@@ -67,27 +48,6 @@ class AnnualDaylightPostProcess(GroupedDAG):
             }
         ]
 
-    @task(template=ModelToVis, needs=[restructure_metrics])
-    def create_vsf(
-        self, model=model, grid_data='metrics', active_grid_data='udi',
-        output_format='vsf'
-    ):
-        return [
-            {
-                'from': ModelToVis()._outputs.output_file,
-                'to': 'visualization.vsf'
-            }
-        ]
-
-    results = Outputs.folder(
-        source='results', description='results folder.'
-    )
-
     metrics = Outputs.folder(
         source='metrics', description='metrics folder.'
-    )
-
-    visualization = Outputs.file(
-        source='visualization.vsf',
-        description='Annual Daylight result visualization in VisualizationSet format.'
     )
