@@ -61,6 +61,11 @@ class AnnualDaylightPostProcess(GroupedDAG):
             }
         ]
 
+    visualization = Outputs.file(
+        source='visualization.vsf',
+        description='Annual daylight result visualization in VisualizationSet format.'
+    )
+
     metrics = Outputs.folder(
         source='metrics', description='metrics folder.'
     )
