@@ -58,29 +58,52 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
+
+  deploy-viz-and-full:
+    name: Deploy `viz` and `full` branches
+    runs-on: ubuntu-latest
+    needs: [deploy, deploy-to-staging]
+    if: ${{ github.ref == 'refs/heads/master' && github.repository_owner == 'pollination' && contains(needs.deploy.outputs.tag, '.') }}
+    strategy:
+      fail-fast: true
+      matrix:
+        branch: [viz, full]
+    steps:
       - uses: actions/checkout@v2
         with:
-          ref: visualization
+          ref: ${{ matrix.branch }}
           fetch-depth: 0
-      - name: rebase visualization branch
+      - name: rebase ${{ matrix.branch }} branch
         run: |
           git config --global user.email "ci@pollination.cloud"
           git config --global user.name "GitHub Actions"
           git rebase origin/master
-      - name: install python viz dependencies
-        run: pip install .[viz]
-      - name: deploy viz to staging
+      - name: install python additional dependencies
+        run: |
+          pip install -r dev-requirements.txt
+          pip install .[viz]
+      - name: deploy ${{ matrix.branch }} branch to staging
         env:
           TAG: ${{ needs.deploy.outputs.tag }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
         run: |
-          TAG=$(echo "${TAG:?}-viz" | sed 's/[[:space:]]//g')
+          TAG=$(echo "${TAG:?}" | sed 's/[[:space:]]//g')
 
-          echo $TAG
+          echo $TAG-${{ matrix.branch }}
 
           queenbee
-          pollination dsl push pollination-annual-daylight --tag $TAG -e https://api.staging.pollination.cloud -src https://api.staging.pollination.cloud/registries --push-dependencies
+          pollination dsl push pollination-annual-daylight --tag $TAG-${{ matrix.branch }} -e https://api.staging.pollination.cloud -src https://api.staging.pollination.cloud/registries --push-dependencies
+
+      - name: deploy ${{ matrix.branch }} branch to PyPI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYPI_USERNAME: ${{ secrets.POLLINATION_PYPI_USERNAME }}
+          PYPI_PASSWORD: ${{ secrets.POLLINATION_PYPI_PASSWORD }}
+        run:
+          python setup.py sdist bdist_wheel --branch ${{ matrix.branch }}
+          echo "Pushing new version to PyPi"
+          twine upload dist/* -u ${{ PYPI_USERNAME }} -p ${{ PYPI_PASSWORD }}
 
   deploy-to-production:
     name: Deploy to Pollination Production

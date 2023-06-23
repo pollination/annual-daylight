@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import setuptools
 
 with open("README.md", "r") as fh:
@@ -12,6 +13,41 @@ with open('extras-requirements.txt') as f:
     extras_requirements = f.read().splitlines()
     extras_requirements = [req.replace('==', '>=') for req in extras_requirements]
 
+
+# read branch input and remove it from sys.argv
+if '--branch' in sys.argv:
+    index = sys.argv.index('--branch')
+    sys.argv.pop(index)
+    branch = sys.argv.pop(index)
+else:
+    branch = 'master'
+
+
+def add_tag_to_version():
+    """A method to tag the version based on the name of the input branch."""
+
+    def get_version(version):
+        tag = str(version.tag)
+        try:
+            x, y, z = tag.split('.')
+        except ValueError:
+            # fix the case that the build fails on GitHub action
+            x, y = tag.split('.')
+            z = 0
+
+        if branch == 'viz':
+            return f'{x}.{y}+viz.{z}'
+        elif branch == 'full':
+            return f'{x}.{y}+full.{z}'
+        else:
+            return tag
+
+    def empty(version):
+        return ''
+
+    return {'local_scheme': get_version, 'version_scheme': empty}
+
+
 # normal setuptool inputs
 setuptools.setup(
     name='pollination-annual-daylight',                                     # will be used for package name unless it is overwritten using __queenbee__ info.
@@ -22,7 +58,7 @@ setuptools.setup(
     ),
     install_requires=requirements,
     extras_require={'viz': extras_requirements},
-    use_scm_version=True,
+    use_scm_version=add_tag_to_version,
     setup_requires=['setuptools_scm'],
     url='https://github.com/pollination/annual-daylight',                   # will be translated to home
     project_urls={
