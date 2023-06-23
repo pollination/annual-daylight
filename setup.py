@@ -22,35 +22,15 @@ if '--branch' in sys.argv:
 else:
     branch = 'master'
 
-
-def add_tag_to_version():
-    """A method to tag the version based on the name of the input branch."""
-
-    def get_version(version):
-        tag = str(version.tag)
-        try:
-            x, y, z = tag.split('.')
-        except ValueError:
-            # fix the case that the build fails on GitHub action
-            x, y = tag.split('.')
-            z = 0
-
-        if branch == 'viz':
-            return f'{x}.{y}+viz.{z}'
-        elif branch == 'full':
-            return f'{x}.{y}+full.{z}'
-        else:
-            return tag
-
-    def empty(version):
-        return ''
-
-    return {'local_scheme': get_version, 'version_scheme': empty}
-
+name = 'pollination-annual-daylight'
+if branch == 'viz':
+    name = f'{name}.viz'
+elif branch == 'full':
+    name = f'{name}.full'
 
 # normal setuptool inputs
 setuptools.setup(
-    name='pollination-annual-daylight',                                     # will be used for package name unless it is overwritten using __queenbee__ info.
+    name=name,                                                              # will be used for package name unless it is overwritten using __queenbee__ info.
     author='ladybug-tools',                                                 # the owner account for this package - required if pushed to Pollination
     author_email='info@ladybug.tools',
     packages=setuptools.find_namespace_packages(                            # required - that's how pollination find the package
@@ -58,7 +38,7 @@ setuptools.setup(
     ),
     install_requires=requirements,
     extras_require={'viz': extras_requirements},
-    use_scm_version=add_tag_to_version,
+    use_scm_version=True,
     setup_requires=['setuptools_scm'],
     url='https://github.com/pollination/annual-daylight',                   # will be translated to home
     project_urls={
