@@ -100,7 +100,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYPI_USERNAME: ${{ secrets.POLLINATION_PYPI_USERNAME }}
           PYPI_PASSWORD: ${{ secrets.POLLINATION_PYPI_PASSWORD }}
-        run:
+        run: |
           python setup.py sdist bdist_wheel --branch ${{ matrix.branch }}
           echo "Pushing new version to PyPi"
           twine upload dist/* -u $PYPI_USERNAME -p $PYPI_PASSWORD
