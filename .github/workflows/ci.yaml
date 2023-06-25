@@ -68,6 +68,7 @@ jobs:
       fail-fast: true
       matrix:
         branch: [full, viz]
+      max-parallel: 1
     steps:
       - uses: actions/checkout@v2
         with:
@@ -150,6 +151,7 @@ jobs:
       fail-fast: true
       matrix:
         branch: [full, viz]
+      max-parallel: 1
     steps:
       - uses: actions/checkout@v2
         with:
