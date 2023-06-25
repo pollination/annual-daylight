@@ -28,6 +28,20 @@ if branch == 'viz':
 elif branch == 'full':
     name = f'{name}.full'
 
+
+def _clean_version():
+    """Make sure the version will not be a local version."""
+
+    def get_version(version):
+        tag = str(version.tag)
+        return tag
+
+    def empty(version):
+        return ''
+
+    return {'local_scheme': get_version, 'version_scheme': empty}
+
+
 # normal setuptool inputs
 setuptools.setup(
     name=name,                                                              # will be used for package name unless it is overwritten using __queenbee__ info.
@@ -38,7 +52,7 @@ setuptools.setup(
     ),
     install_requires=requirements,
     extras_require={'viz': extras_requirements},
-    use_scm_version=True,
+    use_scm_version=_clean_version,
     setup_requires=['setuptools_scm'],
     url='https://github.com/pollination/annual-daylight',                   # will be translated to home
     project_urls={
