@@ -31,10 +31,7 @@ class AnnualDaylightPostProcess(GroupedDAG):
     )
 
     @task(
-        template=MergeFolderMetrics,
-        sub_paths={
-            'input_folder': 'metrics'
-        }
+        template=MergeFolderMetrics
     )
     def restructure_metrics(
         self, input_folder=initial_results,

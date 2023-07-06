@@ -160,7 +160,7 @@ class AnnualDaylightEntryPoint(DAG):
         }
     )
     def post_process_annual_daylight(
-        self, initial_results='initial_results',
+        self, initial_results='initial_results/metrics',
         dist_info=prepare_folder_annual_daylight._outputs.resources,
         grids_info=prepare_folder_annual_daylight._outputs.results,
         model=model
