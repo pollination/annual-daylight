@@ -97,6 +97,11 @@ class AnnualDaylightEntryPoint(DAG):
         alias=daylight_thresholds_input
     )
 
+    grid_metrics = Inputs.file(
+        description='A JSON file with additional custom metrics to calculate.',
+        extensions=['json'], optional=True
+    )
+
     @task(template=AnnualDaylightPrepareFolder)
     def prepare_folder_annual_daylight(
         self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
@@ -163,17 +168,26 @@ class AnnualDaylightEntryPoint(DAG):
         self, initial_results='initial_results/metrics',
         dist_info=prepare_folder_annual_daylight._outputs.resources,
         grids_info=prepare_folder_annual_daylight._outputs.results,
-        model=model
+        model=model,
+        grid_metrics=grid_metrics
         ):
         return [
             {
                 'from': AnnualDaylightPostProcess()._outputs.metrics,
                 'to': 'metrics'
+            },
+            {
+                'from': AnnualDaylightPostProcess()._outputs.grid_summary,
+                'to': 'grid_summary.csv'
             }
         ]
 
     metrics = Outputs.folder(
         source='metrics', description='Annual metrics folder.'
+    )
+
+    grid_summary = Outputs.file(
+        source='grid_summary.csv', description='grid summary.'
     )
 
     da = Outputs.folder(

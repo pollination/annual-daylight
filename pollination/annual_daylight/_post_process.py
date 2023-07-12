@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from pollination_dsl.dag import Inputs, GroupedDAG, task, Outputs
 from pollination.honeybee_radiance_postprocess.grid import MergeFolderMetrics
+from pollination.honeybee_radiance_postprocess.post_process import GridSummaryMetrics
 
 
 @dataclass
@@ -30,6 +31,11 @@ class AnnualDaylightPostProcess(GroupedDAG):
         path='grids_info.json'
     )
 
+    grid_metrics = Inputs.file(
+        description='A JSON file with additional custom metrics to calculate.',
+        path='grid_metrics.json', optional=True
+    )
+
     @task(
         template=MergeFolderMetrics
     )
@@ -45,6 +51,26 @@ class AnnualDaylightPostProcess(GroupedDAG):
             }
         ]
 
+    @task(
+        template=GridSummaryMetrics,
+        needs=[restructure_metrics]
+    )
+    def grid_summary_metrics(
+        self, folder=restructure_metrics._outputs.output_folder,
+        model=model, grids_info=grids_info, grid_metrics=grid_metrics,
+        folder_level='sub-folder'
+    ):
+        return [
+            {
+                'from': GridSummaryMetrics()._outputs.grid_summary,
+                'to': 'grid_summary.csv'
+            }
+        ]
+
     metrics = Outputs.folder(
         source='metrics', description='metrics folder.'
+    )
+
+    grid_summary = Outputs.file(
+        source='grid_summary.csv', description='grid summary.'
     )
