@@ -10,6 +10,7 @@ from pollination.alias.inputs.radiancepar import rad_par_annual_input, \
 from pollination.alias.inputs.grid import grid_filter_input, \
     min_sensor_count_input, cpu_count
 from pollination.alias.inputs.schedule import schedule_csv_input
+from pollination.alias.inputs.postprocess import grid_metrics_input
 from pollination.alias.outputs.daylight import daylight_autonomy_results, \
     continuous_daylight_autonomy_results, \
     udi_results, udi_lower_results, udi_upper_results
@@ -99,7 +100,7 @@ class AnnualDaylightEntryPoint(DAG):
 
     grid_metrics = Inputs.file(
         description='A JSON file with additional custom metrics to calculate.',
-        extensions=['json'], optional=True
+        extensions=['json'], optional=True, alias=grid_metrics_input
     )
 
     @task(template=AnnualDaylightPrepareFolder)
