@@ -169,5 +169,5 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
     )
 
     sensor_grids = Outputs.list(
-        source='resources/grid/_info.json'
+        source='resources/grid/_info.json', description='list of sensor grids.'
     )
