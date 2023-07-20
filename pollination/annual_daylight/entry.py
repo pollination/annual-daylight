@@ -13,7 +13,7 @@ from pollination.alias.inputs.schedule import schedule_csv_input
 from pollination.alias.inputs.postprocess import grid_metrics_input
 from pollination.alias.outputs.daylight import daylight_autonomy_results, \
     continuous_daylight_autonomy_results, \
-    udi_results, udi_lower_results, udi_upper_results
+    udi_results, udi_lower_results, udi_upper_results, grid_metrics_results
 
 
 from ._prepare_folder import AnnualDaylightPrepareFolder
@@ -188,7 +188,8 @@ class AnnualDaylightEntryPoint(DAG):
     )
 
     grid_summary = Outputs.file(
-        source='grid_summary.csv', description='grid summary.'
+        source='grid_summary.csv', description='Grid summary of metrics.',
+        alias=grid_metrics_results
     )
 
     da = Outputs.folder(
