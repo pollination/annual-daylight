@@ -4,7 +4,7 @@ from pollination_dsl.dag import Inputs, GroupedDAG, task, Outputs
 from pollination.honeybee_radiance.sun import CreateSunMatrix, ParseSunUpHours
 from pollination.honeybee_radiance.translate import CreateRadianceFolderGrid
 from pollination.honeybee_radiance.sky import CreateSkyDome, CreateSkyMatrix
-from pollination.honeybee_radiance.octree import CreateOctree
+from pollination.honeybee_radiance.octree import CreateOctreeStatic
 from pollination.honeybee_radiance.grid import SplitGridFolder
 
 # input/output alias
@@ -93,12 +93,12 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
             }
         ]
 
-    @task(template=CreateOctree, needs=[create_rad_folder])
+    @task(template=CreateOctreeStatic, needs=[create_rad_folder])
     def create_octree(self, model=create_rad_folder._outputs.model_folder):
         """Create octree from radiance folder."""
         return [
             {
-                'from': CreateOctree()._outputs.scene_file,
+                'from': CreateOctreeStatic()._outputs.scene_file,
                 'to': 'resources/scene.oct'
             }
         ]
