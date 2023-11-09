@@ -1,5 +1,6 @@
 from pollination_dsl.dag import Inputs, DAG, task, Outputs
 from dataclasses import dataclass
+from pollination.honeybee_radiance_postprocess.grid import MergeFolderData
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
@@ -188,16 +189,36 @@ class AnnualDaylightEntryPoint(DAG):
             {
                 'from': AnnualDaylightPostProcess()._outputs.visualization,
                 'to': 'visualization.vsf'
-            },
+            }
+        ]
+
+    @task(
+        template=MergeFolderData,
+        needs=[prepare_folder_annual_daylight, annual_daylight_raytracing],
+        sub_paths={
+            'dist_info': 'grid/_redist_info.json'
+        }
+    )
+    def restructure_results(
+        self, input_folder='initial_results/final',
+        dist_info=prepare_folder_annual_daylight._outputs.resources,
+        extension='ill'
+    ):
+        return [
             {
-                'from': AnnualDaylightPostProcess()._outputs.grid_summary,
-                'to': 'grid_summary.csv'
+                'from': MergeFolderData()._outputs.output_folder,
+                'to': 'results/__static_apertures__/default/total'
             }
         ]
 
     visualization = Outputs.file(
         source='visualization.vsf',
         description='Result visualization in VisualizationSet format.'
+    )
+
+    results = Outputs.folder(
+        source='results', description='Folder with raw result files (.ill) that '
+        'contain illuminance matrices for each sensor at each timestep of the analysis.'
     )
 
     metrics = Outputs.folder(
