@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 # input/output alias
 from pollination.alias.inputs.model import hbjson_model_grid_input
-from pollination.alias.inputs.wea import wea_input_timestep_check
+from pollination.alias.inputs.wea import wea_input
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input, \
     daylight_thresholds_input
@@ -78,7 +78,13 @@ class AnnualDaylightEntryPoint(DAG):
     wea = Inputs.file(
         description='Wea file.',
         extensions=['wea', 'epw'],
-        alias=wea_input_timestep_check
+        alias=wea_input
+    )
+
+    timestep = Inputs.int(
+        description='Input wea timestep. This value will be used to compute '
+        'cumulative radiation results.', default=1,
+        spec={'type': 'integer', 'minimum': 1, 'maximum': 60}
     )
 
     schedule = Inputs.file(
@@ -106,7 +112,7 @@ class AnnualDaylightEntryPoint(DAG):
     @task(template=AnnualDaylightPrepareFolder)
     def prepare_folder_annual_daylight(
         self, north=north, cpu_count=cpu_count, min_sensor_count=min_sensor_count,
-        grid_filter=grid_filter, model=model, wea=wea
+        grid_filter=grid_filter, model=model, wea=wea, timestep=timestep
         ):
         return [
             {
