@@ -73,6 +73,11 @@ class AnnualDaylightRayTracing(DAG):
         alias=daylight_thresholds_input
     )
 
+    study_info = Inputs.file(
+        description='Optional study info file. This option is needed if the '
+        'time step is larger than 1.', optional=True
+    )
+
     @task(template=DaylightCoefficient)
     def total_sky(
         self,
@@ -104,7 +109,8 @@ class AnnualDaylightRayTracing(DAG):
         sun_up_hours=sun_up_hours,
         schedule=schedule,
         thresholds=thresholds,
-        grid_name=grid_name
+        grid_name=grid_name,
+        study=study_info
     ):
         return [
             {
