@@ -77,7 +77,7 @@ class AnnualDaylightEntryPoint(DAG):
 
     wea = Inputs.file(
         description='Wea file.',
-        extensions=['wea'],
+        extensions=['wea', 'epw'],
         alias=wea_input_timestep_check
     )
 
