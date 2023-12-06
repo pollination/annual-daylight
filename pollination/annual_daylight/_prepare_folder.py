@@ -71,8 +71,7 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
     )
 
     timestep = Inputs.int(
-        description='Input wea timestep. This value will be used to compute '
-        'cumulative radiation results.', default=1,
+        description='Input wea timestep.', default=1,
         spec={'type': 'integer', 'minimum': 1, 'maximum': 60}
     )
 
