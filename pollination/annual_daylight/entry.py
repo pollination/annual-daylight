@@ -136,7 +136,6 @@ class AnnualDaylightEntryPoint(DAG):
         template=AnnualDaylightRayTracing,
         needs=[prepare_folder_annual_daylight],
         loop=prepare_folder_annual_daylight._outputs.sensor_grids,
-        #sub_folder='initial_results/{{item.full_id}}',
         sub_folder='initial_results',
         sub_paths={
             'octree_file': 'scene.oct',
