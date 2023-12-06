@@ -76,7 +76,7 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
         spec={'type': 'integer', 'minimum': 1, 'maximum': 60}
     )
 
-    @task(template=CreateSunMatrix)
+    @task(template=CreateSunMtx)
     def generate_sunpath(self, north=north, wea=wea):
         """Create sunpath for sun-up-hours."""
         return [
