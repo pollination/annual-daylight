@@ -143,7 +143,8 @@ class AnnualDaylightEntryPoint(DAG):
             'sky_matrix': 'sky.mtx',
             'sky_dome': 'sky.dome',
             'bsdfs': 'bsdf',
-            'sun_up_hours': 'sun-up-hours.txt'
+            'sun_up_hours': 'sun-up-hours.txt',
+            'study_info': 'study_info.json'
         }
     )
     def annual_daylight_raytracing(
@@ -158,7 +159,8 @@ class AnnualDaylightEntryPoint(DAG):
         bsdfs=prepare_folder_annual_daylight._outputs.model_folder,
         sun_up_hours=prepare_folder_annual_daylight._outputs.results,
         schedule=schedule,
-        thresholds=thresholds
+        thresholds=thresholds,
+        study_info=prepare_folder_annual_daylight._outputs.results
     ):
         pass
 

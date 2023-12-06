@@ -110,7 +110,7 @@ class AnnualDaylightRayTracing(DAG):
         schedule=schedule,
         thresholds=thresholds,
         grid_name=grid_name,
-        study=study_info
+        study_info=study_info
     ):
         return [
             {
