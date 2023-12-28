@@ -26,7 +26,7 @@ class AnnualDaylightPrepareFolder(GroupedDAG):
         description='A number between -360 and 360 for the counterclockwise '
         'difference between the North and the positive Y-axis in degrees. This '
         'can also be a Vector for the direction to North. (Default: 0).',
-        spec={'type': 'number', 'minimum': 0, 'maximum': 360},
+        spec={'type': 'number', 'minimum': -360, 'maximum': 360},
         alias=north_input
     )
 
