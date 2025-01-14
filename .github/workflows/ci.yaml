@@ -59,6 +59,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
+      - name: Set Tag
+        id: set-tag
+        run: |
+          TAG=$(echo "${{ needs.deploy.outputs.tag }}" | sed 's/[[:space:]]//g')
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+      - name: install python dependencies for samples
+        run: pip install -r samples/requirements.txt
+      - name: run on staging
+        run: python samples/run_jobs.py
+        env:
+          QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
+          TAG: ${{ steps.set-tag.outputs.tag }}
+          HOST: https://api.staging.pollination.solutions
 
   deploy-viz-and-full:
     name: Deploy `viz` and `full` branches
@@ -105,19 +118,6 @@ jobs:
           python setup.py sdist bdist_wheel --branch ${{ matrix.branch }}
           echo "Pushing new version to PyPi"
           twine upload dist/* -u $PYPI_USERNAME -p $PYPI_PASSWORD
-      - name: Set Tag
-        id: set-tag
-        run: |
-          TAG=$(echo "${{ needs.deploy.outputs.tag }}-viz" | sed 's/[[:space:]]//g')
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-      - name: install python dependencies for samples
-        run: pip install -r samples/requirements.txt
-      - name: run on staging
-        run: python samples/run_jobs.py
-        env:
-          QB_POLLINATION_TOKEN: ${{ secrets.POLLINATION_STAGING_LADYBUGBOT_TOKEN }}
-          TAG: ${{ steps.set-tag.outputs.tag }}
-          HOST: https://api.staging.pollination.solutions
 
   deploy-to-production:
     name: Deploy to Pollination Production
