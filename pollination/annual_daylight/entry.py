@@ -7,8 +7,7 @@ from pollination.alias.inputs.wea import wea_input
 from pollination.alias.inputs.north import north_input
 from pollination.alias.inputs.radiancepar import rad_par_annual_input, \
     daylight_thresholds_input
-from pollination.alias.inputs.grid import grid_filter_input, \
-    min_sensor_count_input, cpu_count
+from pollination.alias.inputs.grid import grid_filter_input, cpu_count
 from pollination.alias.inputs.schedule import schedule_csv_input
 from pollination.alias.inputs.postprocess import grid_metrics_input
 from pollination.alias.outputs.daylight import daylight_autonomy_results, \
@@ -48,10 +47,9 @@ class AnnualDaylightEntryPoint(DAG):
         'redistributing the sensors based on cpu_count. This value takes '
         'precedence over the cpu_count and can be used to ensure that '
         'the parallelization does not result in generating unnecessarily small '
-        'sensor grids. The default value is set to 1, which means that the '
-        'cpu_count is always respected.', default=500,
-        spec={'type': 'integer', 'minimum': 1},
-        alias=min_sensor_count_input
+        'sensor grids.',
+        default=1000, default_local=500,
+        spec={'type': 'integer', 'minimum': 1}
     )
 
     radiance_parameters = Inputs.str(
